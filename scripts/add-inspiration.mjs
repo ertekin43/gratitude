@@ -1,0 +1,7 @@
+import fs from 'node:fs';
+const path = 'app/(tabs)/index.tsx'; let text = fs.readFileSync(path, 'utf8');
+text = text.replace('function formatEntryTime(date: Date) {\n  return date.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });\n}\n', 'function formatEntryTime(date: Date) {\n  return date.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });\n}\nconst inspiration = ["Bugün fark ettiğin küçük bir güzelliği kaydet.", "Şükür, dikkatin yönünü değiştirir.", "Bugün sana iyi gelen bir kişiyi hatırla.", "Kendine gösterdiğin sabır için de şükredebilirsin."];\n');
+text = text.replace('const favoriteEntries = entries.filter((entry) => entry.favorite);', 'const favoriteEntries = entries.filter((entry) => entry.favorite);\n  const dailyInspiration = inspiration[new Date().getDate() % inspiration.length];');
+text = text.replace('<View style={styles.composerCard}>', '<View style={styles.inspirationCard}><Ionicons name="sparkles-outline" size={16} color={colors.orange} /><Text style={styles.inspirationText}>{dailyInspiration}</Text></View>\n              <View style={styles.composerCard}>');
+text = text.replace('  composerCard: {', '  inspirationCard: { alignItems: "center", backgroundColor: "#FFF4E8", borderRadius: 15, flexDirection: "row", marginBottom: 12, padding: 12 }, inspirationText: { color: colors.ink, flex: 1, fontSize: 12, fontWeight: "600", marginLeft: 8 },\n  composerCard: {');
+fs.writeFileSync(path, text);

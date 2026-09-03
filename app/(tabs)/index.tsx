@@ -30,6 +30,7 @@ function formatEntryDate(date: Date) {
 function formatEntryTime(date: Date) {
   return date.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
 }
+const inspiration = ["Bugün fark ettiğin küçük bir güzelliği kaydet.", "Şükür, dikkatin yönünü değiştirir.", "Bugün sana iyi gelen bir kişiyi hatırla.", "Kendine gösterdiğin sabır için de şükredebilirsin."];
 
 export default function HomeScreen() {
   const [entries, setEntries] = useState<GratitudeEntry[]>([]);
@@ -41,6 +42,8 @@ export default function HomeScreen() {
   const { playEntries } = usePlayer();
   const inputRef = useRef<TextInput>(null);
   const [dailyGoal, setDailyGoal] = useState(5);
+  const favoriteEntries = entries.filter((entry) => entry.favorite);
+  const dailyInspiration = inspiration[new Date().getDate() % inspiration.length];
 
   const refreshEntries = useCallback(async () => {
     setRefreshing(true);
@@ -122,6 +125,7 @@ export default function HomeScreen() {
                 await saveGratitudeEntries(nextEntries);
               }} />
 
+              <View style={styles.inspirationCard}><Ionicons name="sparkles-outline" size={16} color={colors.orange} /><Text style={styles.inspirationText}>{dailyInspiration}</Text></View>
               <View style={styles.composerCard}>
                 <View style={styles.composerTop}>
                   <Text style={styles.composerTitle}>Şu an ne için şükrediyorsun?</Text>
@@ -162,6 +166,7 @@ export default function HomeScreen() {
                   <Text style={styles.sectionSubtitle}>{entries.length ? "İyi olanı fark ettiğin anlar" : "İlk maddeni yazarak başla"}</Text>
                 </View>
                 <View style={styles.listHeaderActions}>
+                  <Pressable onPress={() => playEntries(favoriteEntries)} disabled={!favoriteEntries.length} style={({ pressed }) => [styles.listenTodayButton, pressed && styles.pressed, !favoriteEntries.length && styles.listenTodayDisabled]} accessibilityLabel="Favori şükranları dinle"><Ionicons name="star-outline" size={15} color={colors.primary} /><Text style={styles.listenTodayText}>Favoriler</Text></Pressable>
                   <Pressable onPress={() => playEntries(todayEntries)} disabled={todayEntries.length === 0} style={({ pressed }) => [styles.listenTodayButton, pressed && styles.pressed, todayEntries.length === 0 && styles.listenTodayDisabled]} accessibilityLabel="Bugünün şükürlerini dinle">
                     <Ionicons name="volume-high-outline" size={15} color={colors.primary} />
                     <Text style={styles.listenTodayText}>Dinle</Text>
@@ -192,7 +197,7 @@ export default function HomeScreen() {
                   <Text style={styles.entryMetaText}>{formatEntryDate(new Date(item.createdAt))} · {formatEntryTime(new Date(item.createdAt))}</Text>
                 </View>
               </View>
-              <Ionicons name="checkmark-circle" size={19} color={colors.primary} />
+              <Pressable onPress={async () => { const nextEntries = entries.map((entry) => entry.id === item.id ? { ...entry, favorite: !entry.favorite } : entry); setEntries(nextEntries); await saveGratitudeEntries(nextEntries); }} accessibilityLabel={item.favorite ? "Favoriden çıkar" : "Favoriye ekle"}><Ionicons name={item.favorite ? "star" : "star-outline"} size={20} color={item.favorite ? colors.orange : colors.muted} /></Pressable>
             </View>
           )}
         />
@@ -244,6 +249,7 @@ const styles = StyleSheet.create({
   listenTodayDisabled: { opacity: 0.45 },
   listenTodayText: { color: colors.primary, fontSize: 11, fontWeight: "800" },
   listHeaderActions: { alignItems: "center", flexDirection: "row", gap: 7 },
+  inspirationCard: { alignItems: "center", backgroundColor: "#FFF4E8", borderRadius: 15, flexDirection: "row", marginBottom: 12, padding: 12 }, inspirationText: { color: colors.ink, flex: 1, fontSize: 12, fontWeight: "600", marginLeft: 8 },
   composerCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,

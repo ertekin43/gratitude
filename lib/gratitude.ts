@@ -4,6 +4,7 @@ export type GratitudeEntry = {
   id: string;
   text: string;
   createdAt: string;
+  favorite?: boolean;
 };
 
 export const GRATITUDE_STORAGE_KEY = "sukur-gunlugu.entries.v1";
