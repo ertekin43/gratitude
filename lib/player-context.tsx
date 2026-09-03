@@ -6,7 +6,6 @@ import { Platform } from "react-native";
 
 import { DEFAULT_LISTENING_SETTINGS, loadListeningSettings, type ListeningSettings } from "@/lib/listening-settings";
 import type { GratitudeEntry } from "@/lib/gratitude";
-import { getAmbienceSource } from "@/lib/ambience-presets";
 
 type PlayerContextValue = {
   entries: GratitudeEntry[];
@@ -77,7 +76,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const ensureAmbience = useCallback(() => {
     const uri = settingsRef.current.ambienceUri; if (!uri) return null;
-    if (!ambienceRef.current) { ambienceRef.current = createAudioPlayer(getAmbienceSource(uri)); ambienceRef.current.loop = true; ambienceUriRef.current = uri; ambienceRef.current.volume = settingsRef.current.ambienceVolume / 100; }
+    if (!ambienceRef.current) { ambienceRef.current = createAudioPlayer(uri); ambienceRef.current.loop = true; ambienceUriRef.current = uri; ambienceRef.current.volume = settingsRef.current.ambienceVolume / 100; }
     return ambienceRef.current;
   }, []);
 

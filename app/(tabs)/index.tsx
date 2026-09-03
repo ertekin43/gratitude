@@ -8,7 +8,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { QuickGratitudeModal } from "@/components/quick-gratitude-modal";
 import { loadGratitudeEntries, saveGratitudeEntries, type GratitudeEntry } from "@/lib/gratitude";
 import { usePlayer } from "@/lib/player-context";
-import { loadDailyGoal } from "@/lib/daily-goal";
+import { getGoalProgress, loadDailyGoal } from "@/lib/daily-goal";
 import { loadPreferences } from "@/lib/app-preferences";
 
 const colors = {
@@ -154,7 +154,7 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              <View style={styles.goalCard}><View style={styles.goalHeader}><View style={styles.goalIcon}><Ionicons name={todayEntries.length >= dailyGoal ? "checkmark-circle-outline" : "locate-outline"} size={19} color={colors.primary} /></View><View style={styles.goalCopy}><Text style={styles.goalTitle}>Bugünün hedefi</Text><Text style={styles.goalText}>{todayEntries.length >= dailyGoal ? `Hedefini tamamladın. ${todayEntries.length} şükran kaydettin; istersen devam edebilirsin.` : `${dailyGoal - todayEntries.length} şükran daha eklediğinde hedefin tamamlanacak.`}</Text></View></View><View style={styles.goalTrack}><View style={[styles.goalFill, { width: `${Math.min(100, (dailyGoal / Math.max(dailyGoal, todayEntries.length, 1)) * 100)}%` }]} />{todayEntries.length > dailyGoal ? <View style={[styles.goalOverflow, { width: `${((todayEntries.length - dailyGoal) / todayEntries.length) * 100}%` }]} /> : null}{todayEntries.length > dailyGoal ? <View style={[styles.goalMarker, { left: `${(dailyGoal / todayEntries.length) * 100}%` }]} /> : null}</View><Text style={styles.goalStatus}>{todayEntries.length > dailyGoal ? `Hedefinin %${Math.round((todayEntries.length / dailyGoal - 1) * 100)} üzerindesin` : todayEntries.length === dailyGoal ? "Hedef tamamlandı" : `${todayEntries.length}/${dailyGoal} şükran`}</Text></View>
+              <View style={styles.goalCard}><View style={styles.goalHeader}><View style={styles.goalIcon}><Ionicons name={todayEntries.length >= dailyGoal ? "checkmark-circle-outline" : "locate-outline"} size={19} color={colors.primary} /></View><View style={styles.goalCopy}><Text style={styles.goalTitle}>Bugünün hedefi</Text><Text style={styles.goalText}>{todayEntries.length >= dailyGoal ? `Hedefini tamamladın. ${todayEntries.length} şükran kaydettin; istersen devam edebilirsin.` : `${dailyGoal - todayEntries.length} şükran daha eklediğinde hedefin tamamlanacak.`}</Text></View></View><View style={styles.goalTrack}><View style={[styles.goalFill, { width: `${Math.min(100, (getGoalProgress(todayEntries.length, dailyGoal)) * 100)}%` }]} />{todayEntries.length > dailyGoal ? <View style={[styles.goalOverflow, { width: `${((todayEntries.length - dailyGoal) / todayEntries.length) * 100}%` }]} /> : null}{todayEntries.length > dailyGoal ? <View style={[styles.goalMarker, { left: `${(dailyGoal / todayEntries.length) * 100}%` }]} /> : null}</View><Text style={styles.goalStatus}>{todayEntries.length > dailyGoal ? `Hedefinin %${Math.round((todayEntries.length / dailyGoal - 1) * 100)} üzerindesin` : todayEntries.length === dailyGoal ? "Hedef tamamlandı" : `${todayEntries.length}/${dailyGoal} şükran`}</Text></View>
 
               <View style={styles.listHeader}>
                 <View>

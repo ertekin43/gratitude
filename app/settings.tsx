@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,8 +11,6 @@ import { usePlayer } from "@/lib/player-context";
 import { AppTopActions } from "@/components/app-top-actions";
 import { loadDailyGoal, saveDailyGoal } from "@/lib/daily-goal";
 import { exportJournal, importJournal, loadPreferences, savePreferences, type AppPreferences } from "@/lib/app-preferences";
-import { ambiencePresets } from "@/lib/ambience-presets";
-import { createAudioPlayer, type AudioPlayer } from "expo-audio";
 import { useThemeContext } from "@/lib/theme-provider";
 
 const colors = { background: "#F8F6F0", surface: "#FFFFFF", ink: "#163B2B", muted: "#7B8A82", border: "#E6E8E2", primary: "#2F7D5A", primarySoft: "#E1F0E8", orange: "#E9905E", orangeSoft: "#FFF0E6", danger: "#C75C51" };
@@ -24,7 +22,7 @@ function Field({ label, value, onChangeText, suffix, keyboardType = "decimal-pad
 export default function SettingsScreen() {
   const router = useRouter();
   const { setSettings: setPlayerSettings } = usePlayer();
-  const { setColorScheme } = useThemeContext();
+  const { setThemeName } = useThemeContext();
   const [reminder, setReminder] = useState<ReminderSettings>(DEFAULT_REMINDER);
   const [listening, setListening] = useState<ListeningSettings>(DEFAULT_LISTENING_SETTINGS);
   const [hourText, setHourText] = useState("20");
@@ -32,19 +30,15 @@ export default function SettingsScreen() {
   const [saving, setSaving] = useState(false);
   const [goalText, setGoalText] = useState("5");
   const [preferences, setPreferences] = useState<AppPreferences>({ privacyLock: false, theme: "Adaçayı", entrySort: "newest" });
-  const [previewId, setPreviewId] = useState<string | null>(null);
-  const previewRef = useRef<AudioPlayer | null>(null);
 
   useEffect(() => {
     Promise.all([loadReminderSettings(), loadListeningSettings(), loadDailyGoal(), loadPreferences()]).then(([loadedReminder, loadedListening, loadedGoal, loadedPreferences]) => {
       setReminder(loadedReminder); setHourText(String(loadedReminder.hour).padStart(2, "0")); setMinuteText(String(loadedReminder.minute).padStart(2, "0")); setListening(loadedListening); setGoalText(String(loadedGoal));
       setPreferences(loadedPreferences);
     });
-    return () => { previewRef.current?.remove(); };
   }, []);
 
-  const togglePreview = (id: string, source: number) => { if (previewId === id) { previewRef.current?.pause(); previewRef.current?.remove(); previewRef.current = null; setPreviewId(null); return; } previewRef.current?.remove(); previewRef.current = createAudioPlayer(source); previewRef.current.loop = true; previewRef.current.volume = 0.6; previewRef.current.play(); setPreviewId(id); };
-  const savePreference = async (next: AppPreferences) => { setPreferences(next); await savePreferences(next); setColorScheme(next.theme === "Gece" ? "dark" : "light"); };
+  const savePreference = async (next: AppPreferences) => { setPreferences(next); await savePreferences(next); setThemeName(next.theme); };
   const exportData = async () => { await exportJournal(await (await import("@/lib/gratitude")).loadGratitudeEntries()); };
   const importData = async () => { try { const imported = await importJournal(); if (imported) { const { saveGratitudeEntries } = await import("@/lib/gratitude"); await saveGratitudeEntries(imported); Alert.alert("İçe aktarıldı", `${imported.length} şükran maddesi yüklendi.`); } } catch { Alert.alert("Dosya okunamadı", "Bu dosya geçerli bir Şükür Günlüğü JSON dosyası değil."); } };
 
@@ -97,7 +91,6 @@ export default function SettingsScreen() {
             <Field label="Şükran okunurken atmosfer sesi" value={String(listening.ambienceVolume)} onChangeText={(value) => setListening((current) => ({ ...current, ambienceVolume: Number.parseInt(value, 10) || 0 }))} suffix="%" keyboardType="number-pad" />
             <Text style={styles.helper}>Şükranlar arası beklemede atmosfer sesi %100’e çıkar; geçiş 200 ms içinde yumuşakça yapılır.</Text>
             <View style={styles.musicRow}><View style={styles.musicIcon}><Ionicons name="musical-notes-outline" size={18} color={colors.primary} /></View><View style={styles.musicCopy}><Text style={styles.musicTitle}>Atmosfer müziği</Text><Text numberOfLines={1} style={styles.musicText}>{listening.ambienceName || "Bir preset seç veya telefondan ses seç"}</Text></View>{listening.ambienceUri && <Pressable onPress={() => setListening((current) => ({ ...current, ambienceUri: null, ambienceName: null }))} style={styles.removeButton}><Ionicons name="trash-outline" size={16} color={colors.danger} /></Pressable>}<Pressable onPress={pickAmbience} style={({ pressed }) => [styles.chooseButton, pressed && styles.pressed]}><Ionicons name="folder-open-outline" size={15} color={colors.primary} /><Text style={styles.chooseText}>Dosya</Text></Pressable></View>
-            <View style={styles.presetGrid}>{ambiencePresets.map((preset) => <View key={preset.id} style={styles.presetCard}><View style={styles.presetCopy}><Ionicons name={preset.icon} size={17} color={colors.primary} /><View style={{ flex: 1, marginLeft: 8 }}><Text style={styles.musicTitle}>{preset.name}</Text><Text style={styles.musicText}>{preset.description}</Text></View></View><View style={styles.presetActions}><Pressable onPress={() => togglePreview(preset.id, preset.source)} style={styles.previewButton}><Ionicons name={previewId === preset.id ? "pause" : "play"} size={13} color={colors.primary} /><Text style={styles.chooseText}>{previewId === preset.id ? "Durdur" : "Önizle"}</Text></Pressable><Pressable onPress={() => setListening((current) => ({ ...current, ambienceUri: `preset:${preset.id}`, ambienceName: preset.name }))} style={styles.selectPreset}><Text style={styles.chooseText}>Seç</Text></Pressable></View></View>)}</View>
           </View>
 
           <Pressable onPress={saveAll} disabled={saving} style={({ pressed }) => [styles.saveButton, saving && styles.disabled, pressed && styles.pressed]}><Ionicons name="checkmark-circle-outline" size={19} color="#FFFFFF" /><Text style={styles.saveText}>{saving ? "Kaydediliyor" : "Ayarları kaydet"}</Text></Pressable>

@@ -1,0 +1,5 @@
+import fs from 'node:fs';
+const path = 'app/(tabs)/profile.tsx'; let text = fs.readFileSync(path, 'utf8');
+const marker = '<Text style={styles.total}>{entries.length} toplam</Text>';
+const replacement = '<View style={styles.chartNav}><Pressable onPress={() => setPeriodOffset((value) => value - 1)} style={styles.navButton}><Ionicons name="chevron-back" size={15} color={colors.primary} /></Pressable><Text style={styles.total}>{entries.length} toplam</Text><Pressable onPress={() => setPeriodOffset((value) => value + 1)} style={styles.navButton}><Ionicons name="chevron-forward" size={15} color={colors.primary} /></Pressable></View>';
+if (!text.includes(marker)) throw new Error('chart marker not found'); text = text.replace(marker, replacement); text = text.replace('total: { color:', 'chartNav: { alignItems: "center", flexDirection: "row", gap: 5 }, navButton: { alignItems: "center", backgroundColor: colors.soft, borderRadius: 14, height: 28, justifyContent: "center", width: 28 }, total: { color:'); fs.writeFileSync(path, text);

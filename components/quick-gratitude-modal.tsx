@@ -9,7 +9,7 @@ type Props = { visible: boolean; onClose: () => void; onSave: (text: string) => 
 export function QuickGratitudeModal({ visible, onClose, onSave }: Props) {
   const [text, setText] = useState("");
   const inputRef = useRef<TextInput>(null);
-  const submit = async () => { const value = text.trim(); if (!value) return; await onSave(value); setText(""); onClose(); };
+  const submit = async () => { const value = text.trim(); if (!value) return; await onSave(value); setText(""); requestAnimationFrame(() => inputRef.current?.focus()); };
   return (
     <Modal visible={visible} transparent animationType="slide" onShow={() => inputRef.current?.focus()} onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={0} style={styles.overlay}>

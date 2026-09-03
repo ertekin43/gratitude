@@ -14,6 +14,7 @@ import {
 } from "../lib/gratitude";
 import { normalizeListeningSettings } from "../lib/listening-settings";
 import { getLevelForCount, getRankForCount } from "../lib/profile-ranks";
+import { getGoalProgress } from "../lib/daily-goal";
 
 const reference = new Date(2026, 8, 3, 12, 0, 0);
 
@@ -98,5 +99,9 @@ describe("gratitude date helpers", () => {
     expect(getRankForCount(1259).name).toBe("Vezir");
     expect(getRankForCount(1260).name).toBe("Şah");
     expect(getLevelForCount(1260)).toBe(127);
+  });
+
+  it("keeps an unfinished 300-item goal at 60 percent for 180 entries", () => {
+    expect(getGoalProgress(180, 300)).toBe(0.6);
   });
 });

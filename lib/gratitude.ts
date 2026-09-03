@@ -123,3 +123,16 @@ export function getYearChart(entries: GratitudeEntry[], reference = new Date()) 
     value: entries.filter((entry) => { const date = new Date(entry.createdAt); return date.getFullYear() === year && date.getMonth() === month; }).length,
   }));
 }
+
+export function getMonthsOfYearChart(entries: GratitudeEntry[], reference = new Date()) {
+  const year = reference.getFullYear();
+  return Array.from({ length: 12 }, (_, month) => ({ label: new Date(year, month, 1).toLocaleDateString("tr-TR", { month: "short" }).replace(".", ""), value: entries.filter((entry) => { const date = new Date(entry.createdAt); return date.getFullYear() === year && date.getMonth() === month; }).length }));
+}
+export function getWeeksChart(entries: GratitudeEntry[], reference = new Date()) {
+  const day = new Date(reference); const monday = new Date(day); monday.setHours(0, 0, 0, 0); const mondayOffset = (monday.getDay() + 6) % 7; monday.setDate(monday.getDate() - mondayOffset - 6 * 7);
+  return Array.from({ length: 7 }, (_, index) => { const start = new Date(monday); start.setDate(monday.getDate() + index * 7); const end = new Date(start); end.setDate(start.getDate() + 7); return { label: `${start.getDate()}.${start.getMonth() + 1}`, value: entries.filter((entry) => { const date = new Date(entry.createdAt); return date >= start && date < end; }).length }; });
+}
+export function getYearsChart(entries: GratitudeEntry[], reference = new Date()) {
+  const currentYear = reference.getFullYear();
+  return Array.from({ length: 6 }, (_, index) => { const year = currentYear - 5 + index; return { label: String(year), value: entries.filter((entry) => new Date(entry.createdAt).getFullYear() === year).length }; });
+}
