@@ -110,3 +110,8 @@ export function getDayChart(entries: GratitudeEntry[], reference = new Date()) {
     };
   });
 }
+
+export function pickRandomEntries(entries: GratitudeEntry[], count: number, random = Math.random) {
+  const safeCount = Math.max(0, Math.min(entries.length, Math.floor(count)));
+  return [...entries].sort(() => random() - 0.5).slice(0, safeCount);
+}

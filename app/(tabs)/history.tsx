@@ -4,8 +4,8 @@ import { useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { GratitudePlayer } from "@/components/gratitude-player";
-import { localDateKey, loadGratitudeEntries, saveGratitudeEntries, type GratitudeEntry } from "@/lib/gratitude";
+import { localDateKey, loadGratitudeEntries, pickRandomEntries, saveGratitudeEntries, type GratitudeEntry } from "@/lib/gratitude";
+import { usePlayer } from "@/lib/player-context";
 
 const colors = {
   background: "#F8F6F0",
@@ -41,8 +41,9 @@ export default function HistoryScreen() {
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
-  const [playerDay, setPlayerDay] = useState<DayGroup | null>(null);
+  const [randomCount, setRandomCount] = useState("3");
   const [refreshing, setRefreshing] = useState(false);
+  const { playEntries } = usePlayer();
 
   const refreshEntries = useCallback(async () => {
     setRefreshing(true);
@@ -96,6 +97,11 @@ export default function HistoryScreen() {
     await saveGratitudeEntries(next);
   }, [editingText, entries]);
 
+  const playRandom = useCallback(() => {
+    const count = Math.max(1, Math.min(entries.length, Number.parseInt(randomCount, 10) || 1));
+    playEntries(pickRandomEntries(entries, count));
+  }, [entries, playEntries, randomCount]);
+
   return (
     <ScreenContainer containerClassName="bg-[#F8F6F0]" safeAreaClassName="bg-[#F8F6F0]">
       <ScrollView
@@ -111,6 +117,12 @@ export default function HistoryScreen() {
           <View style={styles.archiveIcon}><Ionicons name="time-outline" size={21} color={colors.primary} /></View>
         </View>
         <Text style={styles.intro}>İyi olanı fark ettiğin günlere dön.</Text>
+        <View style={styles.randomCard}>
+          <View style={styles.randomIcon}><Ionicons name="shuffle-outline" size={18} color={colors.orange} /></View>
+          <View style={styles.randomCopy}><Text style={styles.randomTitle}>Rastgele şükran dinle</Text><Text style={styles.randomText}>Kaç kayıt çalsın?</Text></View>
+          <TextInput value={randomCount} onChangeText={setRandomCount} keyboardType="number-pad" maxLength={2} style={styles.randomInput} />
+          <Pressable onPress={playRandom} disabled={!entries.length} style={({ pressed }) => [styles.randomButton, !entries.length && styles.disabled, pressed && styles.pressed]}><Ionicons name="play" size={14} color="#FFFFFF" /></Pressable>
+        </View>
 
         {groups.length === 0 ? (
           <View style={styles.emptyState}>
@@ -135,7 +147,7 @@ export default function HistoryScreen() {
                 <View style={styles.dayDetail}>
                   <View style={styles.detailToolbar}>
                     <Text style={styles.detailLabel}>ŞÜKÜR MADDELERİ</Text>
-                    <Pressable onPress={() => setPlayerDay(group)} style={({ pressed }) => [styles.listenButton, pressed && styles.pressed]}>
+                    <Pressable onPress={() => playEntries(group.entries)} style={({ pressed }) => [styles.listenButton, pressed && styles.pressed]}>
                       <Ionicons name="volume-high-outline" size={14} color={colors.primary} />
                       <Text style={styles.listenText}>Dinle</Text>
                     </Pressable>
@@ -170,7 +182,6 @@ export default function HistoryScreen() {
             </View>
           );
         })}
-        {playerDay && <GratitudePlayer entries={playerDay.entries} visible onClose={() => setPlayerDay(null)} />}
       </ScrollView>
     </ScreenContainer>
   );
@@ -183,6 +194,14 @@ const styles = StyleSheet.create({
   title: { color: colors.ink, fontSize: 30, fontWeight: "800", letterSpacing: -0.8 },
   archiveIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: 20, height: 42, justifyContent: "center", width: 42 },
   intro: { color: colors.muted, fontSize: 13, marginBottom: 23, marginTop: 7 },
+  randomCard: { alignItems: "center", backgroundColor: colors.orangeSoft, borderRadius: 18, flexDirection: "row", marginBottom: 15, padding: 11 },
+  randomIcon: { alignItems: "center", backgroundColor: "#FFE0C9", borderRadius: 14, height: 31, justifyContent: "center", width: 31 },
+  randomCopy: { flex: 1, marginLeft: 9 },
+  randomTitle: { color: colors.ink, fontSize: 12, fontWeight: "800" },
+  randomText: { color: colors.muted, fontSize: 10, marginTop: 2 },
+  randomInput: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 8, borderWidth: 1, color: colors.ink, fontSize: 12, fontWeight: "800", height: 30, marginRight: 6, paddingHorizontal: 8, textAlign: "center", width: 38 },
+  randomButton: { alignItems: "center", backgroundColor: colors.primary, borderRadius: 15, height: 30, justifyContent: "center", width: 30 },
+  disabled: { opacity: 0.4 },
   emptyState: { alignItems: "center", backgroundColor: "#F1EDE2", borderRadius: 22, marginTop: 80, paddingHorizontal: 25, paddingVertical: 29 },
   emptyIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: 19, height: 48, justifyContent: "center", marginBottom: 11, width: 48 },
   emptyTitle: { color: colors.ink, fontSize: 16, fontWeight: "800" },

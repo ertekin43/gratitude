@@ -1,12 +1,13 @@
 import { useCallback, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { GratitudePlayer } from "@/components/gratitude-player";
+import { QuickGratitudeModal } from "@/components/quick-gratitude-modal";
 import { loadGratitudeEntries, saveGratitudeEntries, type GratitudeEntry } from "@/lib/gratitude";
+import { usePlayer } from "@/lib/player-context";
 
 const colors = {
   background: "#F8F6F0",
@@ -33,7 +34,9 @@ export default function HomeScreen() {
   const [draft, setDraft] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [playerVisible, setPlayerVisible] = useState(false);
+  const [quickVisible, setQuickVisible] = useState(false);
+  const router = useRouter();
+  const { playEntries } = usePlayer();
 
   const refreshEntries = useCallback(async () => {
     setRefreshing(true);
@@ -97,7 +100,10 @@ export default function HomeScreen() {
                   </View>
                   <Text style={styles.title}>Kalbinden geçenleri{`\n`}buraya bırak.</Text>
                 </View>
-                <View style={styles.headerDot} />
+                <View style={styles.topActions}>
+                  <Pressable onPress={() => router.push("/settings")} style={({ pressed }) => [styles.roundButton, pressed && styles.pressed]} accessibilityLabel="Ayarlar"><Ionicons name="settings-outline" size={18} color={colors.primary} /></Pressable>
+                  <Pressable onPress={() => setQuickVisible(true)} style={({ pressed }) => [styles.roundButton, styles.roundButtonFilled, pressed && styles.pressed]} accessibilityLabel="Hızlı şükran yaz"><Ionicons name="flash-outline" size={18} color="#FFFFFF" /></Pressable>
+                </View>
               </View>
 
               <View style={styles.todayCard}>
@@ -112,16 +118,12 @@ export default function HomeScreen() {
                   <Ionicons name="sparkles-outline" size={22} color={colors.primary} />
                 </View>
               </View>
-              <Pressable
-                onPress={() => setPlayerVisible(true)}
-                disabled={todayEntries.length === 0}
-                style={({ pressed }) => [styles.listenTodayButton, pressed && styles.pressed, todayEntries.length === 0 && styles.listenTodayDisabled]}
-              >
-                <Ionicons name="volume-high-outline" size={17} color={colors.primary} />
-                <Text style={styles.listenTodayText}>Bugünün şükürlerini dinle</Text>
-                <Ionicons name="chevron-forward" size={15} color={colors.primary} />
-              </Pressable>
-              <GratitudePlayer entries={todayEntries} visible={playerVisible} onClose={() => setPlayerVisible(false)} />
+              <QuickGratitudeModal visible={quickVisible} onClose={() => setQuickVisible(false)} onSave={async (text) => {
+                const nextEntry: GratitudeEntry = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, text, createdAt: new Date().toISOString() };
+                const nextEntries = [nextEntry, ...entries];
+                setEntries(nextEntries);
+                await saveGratitudeEntries(nextEntries);
+              }} />
 
               <View style={styles.composerCard}>
                 <View style={styles.composerTop}>
@@ -158,8 +160,12 @@ export default function HomeScreen() {
                   <Text style={styles.sectionTitle}>Şükürlerin</Text>
                   <Text style={styles.sectionSubtitle}>{entries.length ? "İyi olanı fark ettiğin anlar" : "İlk maddeni yazarak başla"}</Text>
                 </View>
-                <View style={styles.totalPill}>
-                  <Text style={styles.totalPillText}>{entries.length}</Text>
+                <View style={styles.listHeaderActions}>
+                  <Pressable onPress={() => playEntries(todayEntries)} disabled={todayEntries.length === 0} style={({ pressed }) => [styles.listenTodayButton, pressed && styles.pressed, todayEntries.length === 0 && styles.listenTodayDisabled]} accessibilityLabel="Bugünün şükürlerini dinle">
+                    <Ionicons name="volume-high-outline" size={15} color={colors.primary} />
+                    <Text style={styles.listenTodayText}>Dinle</Text>
+                  </Pressable>
+                  <View style={styles.totalPill}><Text style={styles.totalPillText}>{entries.length}</Text></View>
                 </View>
               </View>
             </View>
@@ -215,6 +221,9 @@ const styles = StyleSheet.create({
   },
   brandText: { color: colors.primary, fontSize: 11, fontWeight: "800", letterSpacing: 1.5 },
   headerDot: { backgroundColor: colors.orange, borderRadius: 4, height: 8, marginTop: 12, width: 8 },
+  topActions: { alignItems: "center", flexDirection: "row", gap: 8, marginTop: 7 },
+  roundButton: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 21, borderWidth: 1, height: 42, justifyContent: "center", width: 42 },
+  roundButtonFilled: { backgroundColor: colors.primary, borderColor: colors.primary },
   title: { color: colors.ink, fontSize: 30, fontWeight: "800", letterSpacing: -0.8, lineHeight: 35 },
   todayCard: {
     alignItems: "center",
@@ -233,6 +242,7 @@ const styles = StyleSheet.create({
   listenTodayButton: { alignItems: "center", alignSelf: "flex-start", backgroundColor: "#EEF5F0", borderRadius: 12, flexDirection: "row", gap: 7, marginTop: 9, paddingHorizontal: 11, paddingVertical: 8 },
   listenTodayDisabled: { opacity: 0.45 },
   listenTodayText: { color: colors.primary, fontSize: 11, fontWeight: "800" },
+  listHeaderActions: { alignItems: "center", flexDirection: "row", gap: 7 },
   composerCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,

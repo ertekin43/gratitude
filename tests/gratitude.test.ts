@@ -8,8 +8,10 @@ import {
   isToday,
   isWithinCurrentMonth,
   isWithinCurrentWeek,
+  pickRandomEntries,
   type GratitudeEntry,
 } from "../lib/gratitude";
+import { normalizeListeningSettings } from "../lib/listening-settings";
 
 const reference = new Date(2026, 8, 3, 12, 0, 0);
 
@@ -69,5 +71,17 @@ describe("gratitude date helpers", () => {
     const chart = getDayChart(entries, reference);
     expect(chart).toHaveLength(6);
     expect(chart.at(-1)?.value).toBe(0);
+  });
+
+  it("limits random playback to the requested number without mutating the source", () => {
+    const entries = [entry("one", "2026-09-03T08:00:00.000Z"), entry("two", "2026-09-03T09:00:00.000Z"), entry("three", "2026-09-03T10:00:00.000Z")];
+    const selected = pickRandomEntries(entries, 2, () => 0.8);
+    expect(selected).toHaveLength(2);
+    expect(entries).toHaveLength(3);
+    expect(new Set(selected.map((item) => item.id)).size).toBe(2);
+  });
+
+  it("normalizes listening settings to safe device limits", () => {
+    expect(normalizeListeningSettings({ rate: 4, gapSeconds: -2, ambienceVolume: 130 })).toMatchObject({ rate: 2, gapSeconds: 0, ambienceVolume: 100 });
   });
 });
