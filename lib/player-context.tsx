@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import * as Speech from "expo-speech";
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from "expo-audio";
 import * as Notifications from "expo-notifications";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 
 import { DEFAULT_LISTENING_SETTINGS, loadListeningSettings, type ListeningSettings } from "@/lib/listening-settings";
 import type { GratitudeEntry } from "@/lib/gratitude";
@@ -38,6 +38,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const playbackTokenRef = useRef(0);
   const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notificationIdRef = useRef<string | null>(null);
+  const notificationGenerationRef = useRef(0);
 
   useEffect(() => {
     loadListeningSettings().then((loaded) => { setSettingsState(loaded); settingsRef.current = loaded; });
@@ -65,11 +66,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const updatePlaybackNotification = useCallback(async (item: GratitudeEntry) => {
     if (Platform.OS === "web") return;
-    if (notificationIdRef.current) await Notifications.dismissNotificationAsync(notificationIdRef.current).catch(() => undefined);
+    const generation = ++notificationGenerationRef.current;
+    await Notifications.dismissAllNotificationsAsync().catch(() => undefined);
+    if (generation !== notificationGenerationRef.current) return;
     notificationIdRef.current = await Notifications.scheduleNotificationAsync({ content: { title: "Şükran dinleniyor", body: item.text, sticky: true, autoDismiss: false, sound: false, color: "#2F7D5A", data: { screen: "player", gratitudeId: item.id } }, trigger: null }).catch(() => null);
   }, []);
 
-  const clearPlaybackNotification = useCallback(() => { if (notificationIdRef.current && Platform.OS !== "web") Notifications.dismissNotificationAsync(notificationIdRef.current).catch(() => undefined); notificationIdRef.current = null; }, []);
+  const clearPlaybackNotification = useCallback(() => { notificationGenerationRef.current += 1; if (Platform.OS !== "web") Notifications.dismissAllNotificationsAsync().catch(() => undefined); notificationIdRef.current = null; }, []);
 
   const ensureAmbience = useCallback(() => {
     const uri = settingsRef.current.ambienceUri; if (!uri) return null;
@@ -83,7 +86,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setCurrentIndex(index); setIsPlaying(true); setIsVisible(true); updatePlaybackNotification(item);
     const ambience = ensureAmbience(); if (ambience) { ambience.play(); fadeAmbience(settingsRef.current.ambienceVolume / 100); }
     Speech.speak(item.text, { language: "tr-TR", rate: settingsRef.current.rate, pitch: 1,
-      onDone: () => { if (token !== playbackTokenRef.current) return; fadeAmbience(1); gapTimerRef.current = setTimeout(() => { if (token !== playbackTokenRef.current) return; if (index + 1 < entriesRef.current.length) { fadeAmbience(settingsRef.current.ambienceVolume / 100); speakAt(index + 1); } else { setIsPlaying(false); setCurrentIndex(0); stopAmbience(); clearPlaybackNotification(); } }, settingsRef.current.gapSeconds * 1000); },
+      onDone: () => { if (token !== playbackTokenRef.current) return; fadeAmbience(1); const advance = () => { if (token !== playbackTokenRef.current) return; if (index + 1 < entriesRef.current.length) { fadeAmbience(settingsRef.current.ambienceVolume / 100); speakAt(index + 1); } else { setIsPlaying(false); setCurrentIndex(0); stopAmbience(); clearPlaybackNotification(); } }; if (AppState.currentState !== "active") { advance(); } else { gapTimerRef.current = setTimeout(advance, settingsRef.current.gapSeconds * 1000); } },
       onStopped: () => { /* Bilinçli geçişlerde Speech.stop() çağrılır; durum yeni speakAt tarafından belirlenir. */ },
       onError: () => { if (token === playbackTokenRef.current) { setIsPlaying(false); stopAmbience(); clearPlaybackNotification(); } },
     });

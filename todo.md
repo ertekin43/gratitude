@@ -2,21 +2,28 @@
 
 ## Bu turda tamamlananlar
 
-| Alan | Durum | Not |
-|---|---:|---|
-| Mini çalar | Tamamlandı | Genişletildi; kapatma gizler, durdurma TTS ve atmosferi birlikte durdurur; önceki/sonraki geçişlerde callback yarışları engellendi. |
-| Tam ekran oynatma | Tamamlandı | Mini çalara dokununca Spotify benzeri tam ekran dinleme ekranı açılıyor. |
-| Arka plan oynatma | Tamamlandı | Audio session arka plan için etkinleştirildi; Android’de çalan şükranı gösteren sabit bildirim güncelleniyor. |
-| Günlük hedefi | Tamamlandı | Kullanıcı hedefi yazabiliyor; ilerleme, hedef çizgisi, tamamlandı ve hedef aşımı yüzdesi gösteriliyor. |
-| Günlük giriş | Tamamlandı | Karakter sınırı 1001; kaydetme sonrasında klavye odağı korunuyor. |
-| Üst aksiyonlar | Tamamlandı | Ayarlar ve Hızlı Şükran tüm ekranlarda aynı boyut/sırayla görünüyor; Ayarlar ve tam ekran oynatmada mini çalar gizli kalıyor. |
-| Bulut giriş/profile | Tamamlandı | Giriş URL kontrolü düzeltildi; ad, soyad bilgisi ve avatar URL’si profile taşınıyor. |
-| Doğrulama | Tamamlandı | 7 test geçti, TypeScript ve lint temiz. |
+- [x] Android odaklı yerel şükür günlüğü ve 1001 karakter metin desteği.
+- [x] Günlük hedefi Ayarlar’a taşındı; varsayılan hedef 5 ve günlük sayfasında yalnızca ilerleme barı gösteriliyor.
+- [x] Hedef aşımında hedef çizgisi ve daha koyu aşım bölümü gösteriliyor.
+- [x] Bulut yedeği Profil’den Ayarlar’a taşındı; hesap OAuth/Google giriş butonu Ayarlar’da.
+- [x] Profilde ad, e-posta ve avatar gösterimi korunuyor.
+- [x] Mini çalar büyütüldü; durdurma atmosferi de durduruyor, kapatma mini çaları gizliyor.
+- [x] Hızlı geçişlerde bildirim yığılması engellendi; güncel şükran bildirimi tutuluyor.
+- [x] Arka planda TTS geçişinde zamanlayıcıya takılmayan ilerleme akışı eklendi.
+- [x] Spotify benzeri tam ekran oynatıcı; küçük metin ve yumuşak hareketli dekoratif motifler.
+- [x] Hızlı şükran modalı Android klavyesinin üzerinde açılıyor.
+- [x] Geçmişte arama, arama sonuçlarını tümüyle dinleme ve büyütülmüş rastgele dinleme kartı.
+- [x] Günler ayrı detay sayfalarında açılıyor; popup düzenleme ve silme işlemleri mevcut.
 
 ## Bilinen platform notları
 
-Android sistem bildiriminde çalan şükranın başlığı ve metni gösterilir. Gerçek Spotify tarzı medya butonları için native medya oturumu/lock-screen kontrolü gerekir; mevcut Expo bildirim API’si standart bildirim sunar. Atmosfer ses dosyası cihazda tutulur ve bulut yedeğine yüklenmez.
+- [ ] Android Expo Speech callback’leri işletim sistemi tarafından askıya alınırsa TTS’in arka planda kesintisiz sürmesi Expo managed katmanının sınırına takılabilir; geçiş mantığı bu durumda bir sonraki maddede doğrudan devam etmeyi deniyor.
+- [ ] Atmosfer müziği cihazda yerel kalır; bulut yedeğine ses dosyası dahil edilmez.
+- [ ] Android bildirimde çalan şükranın başlığı ve metni gösterilir; gerçek Spotify medya butonları için native medya oturumu gerekir.
 
-## Sonraki işlem
+## Doğrulama
 
-- [ ] Yeni APK derlemesini başlat ve Android indirme bağlantısını paylaş.
+- [x] `pnpm test` — 7 test başarılı, 1 auth testi atlandı.
+- [x] `pnpm check` — TypeScript hatası yok.
+- [x] `pnpm lint` — hata yok; yalnızca paket modül tipi uyarısı var.
+- [ ] Güncel EAS Android APK derlemesi ve indirme bağlantısı.

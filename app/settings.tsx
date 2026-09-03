@@ -9,6 +9,11 @@ import { DEFAULT_REMINDER, loadReminderSettings, setDailyReminder, type Reminder
 import { DEFAULT_LISTENING_SETTINGS, loadListeningSettings, saveListeningSettings, type ListeningSettings } from "@/lib/listening-settings";
 import { usePlayer } from "@/lib/player-context";
 import { AppTopActions } from "@/components/app-top-actions";
+import { loadDailyGoal, saveDailyGoal } from "@/lib/daily-goal";
+import { startOAuthLogin } from "@/constants/oauth";
+import { useAuth } from "@/hooks/use-auth";
+import { trpc } from "@/lib/trpc";
+import { loadGratitudeEntries, saveGratitudeEntries } from "@/lib/gratitude";
 
 const colors = { background: "#F8F6F0", surface: "#FFFFFF", ink: "#163B2B", muted: "#7B8A82", border: "#E6E8E2", primary: "#2F7D5A", primarySoft: "#E1F0E8", orange: "#E9905E", orangeSoft: "#FFF0E6", danger: "#C75C51" };
 
@@ -19,17 +24,32 @@ function Field({ label, value, onChangeText, suffix, keyboardType = "decimal-pad
 export default function SettingsScreen() {
   const router = useRouter();
   const { setSettings: setPlayerSettings } = usePlayer();
+  const { isAuthenticated } = useAuth();
   const [reminder, setReminder] = useState<ReminderSettings>(DEFAULT_REMINDER);
   const [listening, setListening] = useState<ListeningSettings>(DEFAULT_LISTENING_SETTINGS);
   const [hourText, setHourText] = useState("20");
   const [minuteText, setMinuteText] = useState("00");
   const [saving, setSaving] = useState(false);
+  const [goalText, setGoalText] = useState("5");
+  const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced">("idle");
+  const syncMutation = trpc.gratitude.sync.useMutation();
 
   useEffect(() => {
-    Promise.all([loadReminderSettings(), loadListeningSettings()]).then(([loadedReminder, loadedListening]) => {
-      setReminder(loadedReminder); setHourText(String(loadedReminder.hour).padStart(2, "0")); setMinuteText(String(loadedReminder.minute).padStart(2, "0")); setListening(loadedListening);
+    Promise.all([loadReminderSettings(), loadListeningSettings(), loadDailyGoal()]).then(([loadedReminder, loadedListening, loadedGoal]) => {
+      setReminder(loadedReminder); setHourText(String(loadedReminder.hour).padStart(2, "0")); setMinuteText(String(loadedReminder.minute).padStart(2, "0")); setListening(loadedListening); setGoalText(String(loadedGoal));
     });
   }, []);
+
+  const syncToCloud = async () => {
+    if (!isAuthenticated) { await startOAuthLogin(); return; }
+    setSyncState("syncing");
+    try {
+      const local = await loadGratitudeEntries();
+      const synced = await syncMutation.mutateAsync({ entries: local.map((entry) => ({ ...entry, createdAt: new Date(entry.createdAt) })) });
+      await saveGratitudeEntries(synced.map((entry) => ({ id: entry.id, text: entry.text, createdAt: new Date(entry.createdAt).toISOString() })));
+      setSyncState("synced");
+    } catch { setSyncState("idle"); Alert.alert("Senkronizasyon başarısız", "Bağlantını kontrol edip tekrar deneyebilirsin."); }
+  };
 
   const saveAll = async () => {
     const hour = Math.min(23, Math.max(0, Number.parseInt(hourText, 10) || 0));
@@ -39,6 +59,7 @@ export default function SettingsScreen() {
     setSaving(true);
     const result = await setDailyReminder(nextReminder);
     await saveListeningSettings(nextListening);
+    await saveDailyGoal(Math.min(999, Math.max(1, Number.parseInt(goalText, 10) || 5)));
     setPlayerSettings(nextListening);
     setReminder(nextReminder); setListening(nextListening); setSaving(false);
     if (nextReminder.enabled && !result.granted) Alert.alert("Bildirim izni gerekli", "Hatırlatıcıyı çalıştırmak için Android bildirim izni vermelisin.");
@@ -63,6 +84,12 @@ export default function SettingsScreen() {
             <Text style={styles.helper}>Saati 00–23, dakikayı 00–59 arasında elle yazabilirsin.</Text>
           </View>
 
+          <Text style={styles.sectionTitle}>Günlük hedef</Text>
+          <View style={styles.card}><View style={styles.goalRow}><View style={styles.goalIcon}><Ionicons name="locate-outline" size={19} color={colors.primary} /></View><View style={styles.cardCopy}><Text style={styles.cardTitle}>Bugün kaç şükran?</Text><Text style={styles.cardSubtitle}>Ana sayfadaki ilerleme çubuğu bu hedefi kullanır.</Text></View><View style={styles.goalInputWrap}><TextInput value={goalText} onChangeText={setGoalText} keyboardType="number-pad" maxLength={3} style={styles.goalInput} /><Text style={styles.suffix}>madde</Text></View></View></View>
+
+          <Text style={styles.sectionTitle}>Bulut yedeği</Text>
+          <View style={styles.card}><View style={styles.cardHeading}><View style={styles.cardIcon}><Ionicons name="cloud-outline" size={19} color={colors.primary} /></View><View style={styles.cardCopy}><Text style={styles.cardTitle}>Google hesabınla sakla</Text><Text style={styles.cardSubtitle}>{isAuthenticated ? "Şükranların hesabınla senkronize" : "Cihazlar arasında kullanmak için giriş yap"}</Text></View></View><Pressable onPress={syncToCloud} style={({ pressed }) => [styles.cloudButton, pressed && styles.pressed]}><Ionicons name={isAuthenticated ? "cloud-done-outline" : "logo-google"} size={16} color="#FFFFFF" /><Text style={styles.cloudButtonText}>{syncState === "syncing" ? "Senkronize ediliyor" : isAuthenticated ? "Şimdi yedekle" : "Google ile giriş yap"}</Text></Pressable></View>
+
           <Text style={styles.sectionTitle}>Dinleme ayarları</Text>
           <View style={styles.card}>
             <Field label="Çalma hızı" value={String(listening.rate)} onChangeText={(value) => setListening((current) => ({ ...current, rate: Number.parseFloat(value) || 0.5 }))} suffix="x" />
@@ -79,4 +106,4 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({ flex: { flex: 1 }, content: { paddingHorizontal: 22, paddingBottom: 40, paddingTop: 18 }, header: { alignItems: "center", flexDirection: "row", marginBottom: 27 }, backButton: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 20, borderWidth: 1, height: 40, justifyContent: "center", marginRight: 11, width: 40 }, headerCopy: { flex: 1 }, eyebrow: { color: colors.primary, fontSize: 10, fontWeight: "800", letterSpacing: 1.6, marginBottom: 4 }, title: { color: colors.ink, fontSize: 30, fontWeight: "800" }, settingsIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: 20, height: 40, justifyContent: "center", width: 40 }, sectionTitle: { color: colors.ink, fontSize: 17, fontWeight: "800", marginBottom: 11, marginTop: 4 }, card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 21, borderWidth: 1, marginBottom: 24, padding: 15 }, cardHeading: { alignItems: "center", flexDirection: "row" }, cardIcon: { alignItems: "center", backgroundColor: colors.orangeSoft, borderRadius: 15, height: 34, justifyContent: "center", marginRight: 10, width: 34 }, cardCopy: { flex: 1 }, cardTitle: { color: colors.ink, fontSize: 13, fontWeight: "800" }, cardSubtitle: { color: colors.muted, fontSize: 10, marginTop: 3 }, switch: { backgroundColor: "#CFD5D0", borderRadius: 12, height: 24, justifyContent: "center", padding: 2, width: 42 }, switchOn: { backgroundColor: colors.primary }, switchKnob: { backgroundColor: colors.surface, borderRadius: 10, height: 20, width: 20 }, switchKnobOn: { alignSelf: "flex-end" }, timeRow: { alignItems: "center", borderTopColor: colors.border, borderTopWidth: 1, flexDirection: "row", justifyContent: "space-between", marginTop: 15, paddingTop: 14 }, rowLabel: { color: colors.ink, fontSize: 12, fontWeight: "700" }, timeInputs: { alignItems: "center", flexDirection: "row" }, timeInput: { backgroundColor: "#F3F5F1", borderRadius: 9, color: colors.ink, fontSize: 15, fontWeight: "800", height: 35, textAlign: "center", width: 39 }, colon: { color: colors.ink, fontSize: 16, fontWeight: "800", marginHorizontal: 4 }, helper: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 10 }, field: { alignItems: "center", borderBottomColor: "#F0F1ED", borderBottomWidth: 1, flexDirection: "row", justifyContent: "space-between", minHeight: 51 }, fieldLabel: { color: colors.ink, flex: 1, fontSize: 12, fontWeight: "700" }, fieldInputWrap: { alignItems: "center", backgroundColor: "#F3F5F1", borderRadius: 9, flexDirection: "row", paddingHorizontal: 4 }, fieldInput: { color: colors.ink, fontSize: 13, fontWeight: "800", height: 35, paddingHorizontal: 7, textAlign: "right", width: 55 }, suffix: { color: colors.muted, fontSize: 11, fontWeight: "700", paddingRight: 6 }, musicRow: { alignItems: "center", backgroundColor: "#F3F5F1", borderRadius: 14, flexDirection: "row", marginTop: 14, padding: 10 }, musicIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: 13, height: 30, justifyContent: "center", width: 30 }, musicCopy: { flex: 1, marginHorizontal: 9 }, musicTitle: { color: colors.ink, fontSize: 11, fontWeight: "800" }, musicText: { color: colors.muted, fontSize: 9, marginTop: 3 }, chooseButton: { alignItems: "center", backgroundColor: colors.surface, borderRadius: 9, flexDirection: "row", gap: 4, paddingHorizontal: 8, paddingVertical: 7 }, chooseText: { color: colors.primary, fontSize: 10, fontWeight: "800" }, removeButton: { marginRight: 3, padding: 5 }, saveButton: { alignItems: "center", backgroundColor: colors.primary, borderRadius: 15, flexDirection: "row", gap: 8, justifyContent: "center", paddingVertical: 14 }, saveText: { color: "#FFFFFF", fontSize: 13, fontWeight: "800" }, disabled: { opacity: 0.55 }, pressed: { opacity: 0.7, transform: [{ scale: 0.98 }] } });
+const styles = StyleSheet.create({ flex: { flex: 1 }, content: { paddingHorizontal: 22, paddingBottom: 40, paddingTop: 18 }, header: { alignItems: "center", flexDirection: "row", marginBottom: 27 }, backButton: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 20, borderWidth: 1, height: 40, justifyContent: "center", marginRight: 11, width: 40 }, headerCopy: { flex: 1 }, eyebrow: { color: colors.primary, fontSize: 10, fontWeight: "800", letterSpacing: 1.6, marginBottom: 4 }, title: { color: colors.ink, fontSize: 30, fontWeight: "800" }, settingsIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: 20, height: 40, justifyContent: "center", width: 40 }, sectionTitle: { color: colors.ink, fontSize: 17, fontWeight: "800", marginBottom: 11, marginTop: 4 }, card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 21, borderWidth: 1, marginBottom: 24, padding: 15 }, cardHeading: { alignItems: "center", flexDirection: "row" }, cardIcon: { alignItems: "center", backgroundColor: colors.orangeSoft, borderRadius: 15, height: 34, justifyContent: "center", marginRight: 10, width: 34 }, cardCopy: { flex: 1 }, cardTitle: { color: colors.ink, fontSize: 13, fontWeight: "800" }, cardSubtitle: { color: colors.muted, fontSize: 10, marginTop: 3 }, goalRow: { alignItems: "center", flexDirection: "row" }, goalIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: 15, height: 34, justifyContent: "center", marginRight: 10, width: 34 }, goalInputWrap: { alignItems: "center", backgroundColor: "#F3F5F1", borderRadius: 9, flexDirection: "row", paddingHorizontal: 4 }, goalInput: { color: colors.ink, fontSize: 15, fontWeight: "800", height: 35, paddingHorizontal: 7, textAlign: "right", width: 45 }, cloudButton: { alignItems: "center", backgroundColor: colors.primary, borderRadius: 12, flexDirection: "row", gap: 8, justifyContent: "center", marginTop: 14, paddingVertical: 11 }, cloudButtonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "800" }, switch: { backgroundColor: "#CFD5D0", borderRadius: 12, height: 24, justifyContent: "center", padding: 2, width: 42 }, switchOn: { backgroundColor: colors.primary }, switchKnob: { backgroundColor: colors.surface, borderRadius: 10, height: 20, width: 20 }, switchKnobOn: { alignSelf: "flex-end" }, timeRow: { alignItems: "center", borderTopColor: colors.border, borderTopWidth: 1, flexDirection: "row", justifyContent: "space-between", marginTop: 15, paddingTop: 14 }, rowLabel: { color: colors.ink, fontSize: 12, fontWeight: "700" }, timeInputs: { alignItems: "center", flexDirection: "row" }, timeInput: { backgroundColor: "#F3F5F1", borderRadius: 9, color: colors.ink, fontSize: 15, fontWeight: "800", height: 35, textAlign: "center", width: 39 }, colon: { color: colors.ink, fontSize: 16, fontWeight: "800", marginHorizontal: 4 }, helper: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 10 }, field: { alignItems: "center", borderBottomColor: "#F0F1ED", borderBottomWidth: 1, flexDirection: "row", justifyContent: "space-between", minHeight: 51 }, fieldLabel: { color: colors.ink, flex: 1, fontSize: 12, fontWeight: "700" }, fieldInputWrap: { alignItems: "center", backgroundColor: "#F3F5F1", borderRadius: 9, flexDirection: "row", paddingHorizontal: 4 }, fieldInput: { color: colors.ink, fontSize: 13, fontWeight: "800", height: 35, paddingHorizontal: 7, textAlign: "right", width: 55 }, suffix: { color: colors.muted, fontSize: 11, fontWeight: "700", paddingRight: 6 }, musicRow: { alignItems: "center", backgroundColor: "#F3F5F1", borderRadius: 14, flexDirection: "row", marginTop: 14, padding: 10 }, musicIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: 13, height: 30, justifyContent: "center", width: 30 }, musicCopy: { flex: 1, marginHorizontal: 9 }, musicTitle: { color: colors.ink, fontSize: 11, fontWeight: "800" }, musicText: { color: colors.muted, fontSize: 9, marginTop: 3 }, chooseButton: { alignItems: "center", backgroundColor: colors.surface, borderRadius: 9, flexDirection: "row", gap: 4, paddingHorizontal: 8, paddingVertical: 7 }, chooseText: { color: colors.primary, fontSize: 10, fontWeight: "800" }, removeButton: { marginRight: 3, padding: 5 }, saveButton: { alignItems: "center", backgroundColor: colors.primary, borderRadius: 15, flexDirection: "row", gap: 8, justifyContent: "center", paddingVertical: 14 }, saveText: { color: "#FFFFFF", fontSize: 13, fontWeight: "800" }, disabled: { opacity: 0.55 }, pressed: { opacity: 0.7, transform: [{ scale: 0.98 }] } });

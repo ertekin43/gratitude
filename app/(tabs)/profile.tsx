@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -12,12 +12,8 @@ import {
   isWithinCurrentMonth,
   isWithinCurrentWeek,
   loadGratitudeEntries,
-  saveGratitudeEntries,
   type GratitudeEntry,
 } from "@/lib/gratitude";
-import { DEFAULT_REMINDER, loadReminderSettings, setDailyReminder, type ReminderSettings } from "@/lib/reminders";
-import { startOAuthLogin } from "@/constants/oauth";
-import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
 import { AppTopActions } from "@/components/app-top-actions";
 
@@ -40,25 +36,15 @@ function formatDate(date: Date) {
   return date.toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
 }
 
-function formatReminderTime(settings: ReminderSettings) {
-  return `${String(settings.hour).padStart(2, "0")}:${String(settings.minute).padStart(2, "0")}`;
-}
-
 export default function ProfileScreen() {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const [entries, setEntries] = useState<GratitudeEntry[]>([]);
   const [range, setRange] = useState<ChartRange>("week");
   const [refreshing, setRefreshing] = useState(false);
-  const [reminder, setReminder] = useState(DEFAULT_REMINDER);
-  const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced">("idle");
-
-  const cloudQuery = trpc.gratitude.list.useQuery(undefined, { enabled: isAuthenticated, retry: false });
-  const syncMutation = trpc.gratitude.sync.useMutation();
 
   const refreshEntries = useCallback(async () => {
     setRefreshing(true);
     setEntries(await loadGratitudeEntries());
-    setReminder(await loadReminderSettings());
     setRefreshing(false);
   }, []);
 
@@ -66,56 +52,6 @@ export default function ProfileScreen() {
     refreshEntries();
   }, [refreshEntries]));
 
-  useEffect(() => {
-    if (!cloudQuery.data) return;
-    const mergeCloudEntries = async () => {
-      const local = await loadGratitudeEntries();
-      const mergedMap = new Map<string, GratitudeEntry>();
-      local.forEach((entry) => mergedMap.set(entry.id, entry));
-      cloudQuery.data.forEach((entry) => mergedMap.set(entry.id, { id: entry.id, text: entry.text, createdAt: new Date(entry.createdAt).toISOString() }));
-      const merged = Array.from(mergedMap.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setEntries(merged);
-      await saveGratitudeEntries(merged);
-    };
-    mergeCloudEntries();
-  }, [cloudQuery.data]);
-
-  const syncToCloud = useCallback(async () => {
-    if (!isAuthenticated) {
-      await startOAuthLogin();
-      return;
-    }
-    setSyncState("syncing");
-    try {
-      const local = await loadGratitudeEntries();
-      const synced = await syncMutation.mutateAsync({ entries: local.map((entry) => ({ ...entry, createdAt: new Date(entry.createdAt) })) });
-      const normalized = synced.map((entry) => ({ id: entry.id, text: entry.text, createdAt: new Date(entry.createdAt).toISOString() }));
-      await saveGratitudeEntries(normalized);
-      setEntries(normalized);
-      setSyncState("synced");
-    } catch {
-      setSyncState("idle");
-      Alert.alert("Senkronizasyon başarısız", "Bağlantını kontrol edip tekrar deneyebilirsin.");
-    }
-  }, [isAuthenticated, syncMutation]);
-
-  const toggleReminder = useCallback(async () => {
-    const next = { ...reminder, enabled: !reminder.enabled };
-    const result = await setDailyReminder(next);
-    if (!result.granted && next.enabled) {
-      Alert.alert("Bildirim izni gerekli", "Günlük hatırlatıcıyı açmak için Android bildirim iznini vermelisin.");
-    }
-    setReminder(result.granted || !next.enabled ? next : { ...next, enabled: false });
-  }, [reminder]);
-
-  const cycleReminderTime = useCallback(async () => {
-    const times = [{ hour: 20, minute: 0 }, { hour: 21, minute: 0 }, { hour: 8, minute: 30 }];
-    const currentIndex = times.findIndex((item) => item.hour === reminder.hour && item.minute === reminder.minute);
-    const nextTime = times[(currentIndex + 1) % times.length];
-    const next = { ...reminder, ...nextTime };
-    if (reminder.enabled) await setDailyReminder(next);
-    setReminder(next);
-  }, [reminder]);
 
   const todayCount = useMemo(() => entries.filter((entry) => isToday(new Date(entry.createdAt))).length, [entries]);
   const weekCount = useMemo(() => entries.filter((entry) => isWithinCurrentWeek(new Date(entry.createdAt))).length, [entries]);
@@ -137,21 +73,6 @@ export default function ProfileScreen() {
         <View style={styles.quoteCard}>
           <View style={styles.quoteIcon}><Ionicons name="sparkles" size={19} color={colors.orange} /></View>
           <View style={styles.quoteCopy}><Text style={styles.quoteTitle}>Şükür biriktikçe çoğalır.</Text><Text style={styles.quoteText}>Bugün kendin için ayırdığın bu küçük an çok değerli.</Text></View>
-        </View>
-
-        <View style={styles.sectionRow}>
-          <View><Text style={styles.sectionTitle}>Bulut yedeği</Text><Text style={styles.sectionSubtitle}>{isAuthenticated ? "Hesabınla güvenle saklanıyor" : "Cihazlar arasında kullanmak için giriş yap"}</Text></View>
-          <Pressable onPress={syncToCloud} style={({ pressed }) => [styles.syncButton, pressed && styles.pressed]}>
-            <Ionicons name={isAuthenticated ? "cloud-done-outline" : "log-in-outline"} size={15} color={colors.primary} />
-            <Text style={styles.syncText}>{syncState === "syncing" ? "Yükleniyor" : isAuthenticated ? "Senkronize et" : "Giriş yap"}</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.reminderCard}>
-          <View style={styles.reminderIcon}><Ionicons name="notifications-outline" size={19} color={colors.orange} /></View>
-          <View style={styles.reminderCopy}><Text style={styles.reminderTitle}>Şükür hatırlatıcısı</Text><Text style={styles.reminderText}>{reminder.enabled ? `Her gün ${formatReminderTime(reminder)} · saati değiştirmek için dokun` : "Her gün küçük bir mola için hatırlat"}</Text></View>
-          <Pressable onPress={cycleReminderTime} style={({ pressed }) => [styles.timeButton, pressed && styles.pressed]}><Text style={styles.timeText}>{formatReminderTime(reminder)}</Text></Pressable>
-          <Pressable onPress={toggleReminder} style={({ pressed }) => [styles.switch, reminder.enabled && styles.switchOn, pressed && styles.pressed]} accessibilityRole="switch" accessibilityState={{ checked: reminder.enabled }}><View style={[styles.switchKnob, reminder.enabled && styles.switchKnobOn]} /></Pressable>
         </View>
 
         <Text style={[styles.sectionTitle, styles.summaryTitle]}>Özet</Text>

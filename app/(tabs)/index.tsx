@@ -8,7 +8,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { QuickGratitudeModal } from "@/components/quick-gratitude-modal";
 import { loadGratitudeEntries, saveGratitudeEntries, type GratitudeEntry } from "@/lib/gratitude";
 import { usePlayer } from "@/lib/player-context";
-import { loadDailyGoal, saveDailyGoal } from "@/lib/daily-goal";
+import { loadDailyGoal } from "@/lib/daily-goal";
 
 const colors = {
   background: "#F8F6F0",
@@ -38,9 +38,8 @@ export default function HomeScreen() {
   const [quickVisible, setQuickVisible] = useState(false);
   const router = useRouter();
   const { playEntries } = usePlayer();
-  const [dailyGoal, setDailyGoal] = useState(5);
-  const [goalText, setGoalText] = useState("5");
   const inputRef = useRef<TextInput>(null);
+  const [dailyGoal, setDailyGoal] = useState(5);
 
   const refreshEntries = useCallback(async () => {
     setRefreshing(true);
@@ -54,9 +53,8 @@ export default function HomeScreen() {
     }, [refreshEntries]),
   );
 
-  useFocusEffect(useCallback(() => {
-    loadDailyGoal().then((goal) => { setDailyGoal(goal); setGoalText(String(goal)); });
-  }, []));
+  useFocusEffect(useCallback(() => { loadDailyGoal().then(setDailyGoal); }, []));
+
 
   const addEntry = useCallback(async () => {
     const text = draft.trim();
@@ -167,11 +165,7 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              <View style={styles.goalCard}>
-                <View style={styles.goalHeader}><View style={styles.goalIcon}><Ionicons name="locate-outline" size={19} color={colors.primary} /></View><View style={styles.goalCopy}><Text style={styles.goalTitle}>Bugünün hedefi</Text><Text style={styles.goalText}>{todayEntries.length >= dailyGoal ? `Hedefini tamamladın. ${todayEntries.length} şükran kaydettin; istersen devam edebilirsin.` : `${dailyGoal - todayEntries.length} şükran daha eklediğinde hedefin tamamlanacak.`}</Text></View><View style={styles.goalInputWrap}><TextInput value={goalText} onChangeText={setGoalText} onBlur={async () => { const next = Math.min(999, Math.max(1, Number.parseInt(goalText, 10) || 1)); setDailyGoal(next); setGoalText(String(next)); await saveDailyGoal(next); }} keyboardType="number-pad" maxLength={3} style={styles.goalInput} /><Text style={styles.goalInputSuffix}>hedef</Text></View></View>
-                <View style={styles.goalTrack}><View style={[styles.goalFill, { width: `${Math.min(100, (todayEntries.length / Math.max(dailyGoal, todayEntries.length, 1)) * 100)}%` }]} /><View style={[styles.goalMarker, { left: `${(dailyGoal / Math.max(dailyGoal, todayEntries.length, 1)) * 100}%` }]} /></View>
-                <Text style={styles.goalStatus}>{todayEntries.length > dailyGoal ? `Hedefinin %${Math.round((todayEntries.length / dailyGoal - 1) * 100)} üzerindesin` : todayEntries.length === dailyGoal ? "Hedef tamamlandı" : `${todayEntries.length}/${dailyGoal} şükran`}</Text>
-              </View>
+              <View style={styles.goalCard}><View style={styles.goalHeader}><View style={styles.goalIcon}><Ionicons name="locate-outline" size={19} color={colors.primary} /></View><View style={styles.goalCopy}><Text style={styles.goalTitle}>Bugünün hedefi</Text><Text style={styles.goalText}>{todayEntries.length >= dailyGoal ? `Hedefini tamamladın. ${todayEntries.length} şükran kaydettin; istersen devam edebilirsin.` : `${dailyGoal - todayEntries.length} şükran daha eklediğinde hedefin tamamlanacak.`}</Text></View></View><View style={styles.goalTrack}><View style={[styles.goalFill, { width: `${Math.min(100, (todayEntries.length / Math.max(dailyGoal, todayEntries.length, 1)) * 100)}%` }]} />{todayEntries.length > dailyGoal ? <View style={[styles.goalMarker, { left: `${(dailyGoal / todayEntries.length) * 100}%` }]} /> : null}</View><Text style={styles.goalStatus}>{todayEntries.length > dailyGoal ? `Hedefinin %${Math.round((todayEntries.length / dailyGoal - 1) * 100)} üzerindesin` : todayEntries.length === dailyGoal ? "Hedef tamamlandı" : `${todayEntries.length}/${dailyGoal} şükran`}</Text></View>
 
               <View style={styles.listHeader}>
                 <View>
@@ -277,19 +271,7 @@ const styles = StyleSheet.create({
   addButton: { alignItems: "center", backgroundColor: colors.primaryDark, borderRadius: 13, flexDirection: "row", gap: 8, paddingHorizontal: 15, paddingVertical: 10 },
   addButtonDisabled: { opacity: 0.5 },
   addButtonText: { color: "#FFFFFF", fontSize: 13, fontWeight: "800" },
-  goalCard: { backgroundColor: "#EAF3ED", borderColor: "#D5E8DA", borderRadius: 20, borderWidth: 1, marginTop: 14, padding: 15 },
-  goalHeader: { alignItems: "center", flexDirection: "row" },
-  goalIcon: { alignItems: "center", backgroundColor: "#D2E9D9", borderRadius: 15, height: 32, justifyContent: "center", width: 32 },
-  goalCopy: { flex: 1, marginLeft: 10, marginRight: 8 },
-  goalTitle: { color: colors.ink, fontSize: 13, fontWeight: "800" },
-  goalText: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 3 },
-  goalInputWrap: { alignItems: "center", backgroundColor: colors.surface, borderRadius: 9, paddingHorizontal: 5, paddingVertical: 3 },
-  goalInput: { color: colors.ink, fontSize: 14, fontWeight: "800", height: 26, textAlign: "center", width: 30 },
-  goalInputSuffix: { color: colors.muted, fontSize: 8 },
-  goalTrack: { backgroundColor: "#CFE3D4", borderRadius: 4, height: 8, marginTop: 16, overflow: "visible", position: "relative" },
-  goalFill: { backgroundColor: colors.primary, borderRadius: 4, height: 8 },
-  goalMarker: { backgroundColor: colors.ink, height: 18, position: "absolute", top: -5, width: 2 },
-  goalStatus: { color: colors.primary, fontSize: 11, fontWeight: "800", marginTop: 10, textAlign: "right" },
+  goalCard: { backgroundColor: "#EAF3ED", borderColor: "#D5E8DA", borderRadius: 20, borderWidth: 1, marginTop: 14, padding: 15 }, goalHeader: { alignItems: "center", flexDirection: "row" }, goalIcon: { alignItems: "center", backgroundColor: "#D2E9D9", borderRadius: 15, height: 32, justifyContent: "center", width: 32 }, goalCopy: { flex: 1, marginLeft: 10 }, goalTitle: { color: colors.ink, fontSize: 13, fontWeight: "800" }, goalText: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 3 }, goalTrack: { backgroundColor: "#CFE3D4", borderRadius: 4, height: 8, marginTop: 16, overflow: "visible", position: "relative" }, goalFill: { backgroundColor: colors.primary, borderRadius: 4, height: 8 }, goalMarker: { backgroundColor: colors.ink, height: 18, position: "absolute", top: -5, width: 2 }, goalStatus: { color: colors.primary, fontSize: 11, fontWeight: "800", marginTop: 10, textAlign: "right" },
   pressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
   listHeader: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: 12, marginTop: 28 },
   sectionTitle: { color: colors.ink, fontSize: 18, fontWeight: "800" },

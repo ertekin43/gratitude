@@ -12,7 +12,7 @@ export function QuickGratitudeModal({ visible, onClose, onSave }: Props) {
   const submit = async () => { const value = text.trim(); if (!value) return; await onSave(value); setText(""); onClose(); };
   return (
     <Modal visible={visible} transparent animationType="slide" onShow={() => inputRef.current?.focus()} onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.overlay}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={0} style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} />
         <View style={styles.sheet}>
           <View style={styles.handle} />
