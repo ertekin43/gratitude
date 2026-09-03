@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -8,15 +8,16 @@ type Props = { visible: boolean; onClose: () => void; onSave: (text: string) => 
 
 export function QuickGratitudeModal({ visible, onClose, onSave }: Props) {
   const [text, setText] = useState("");
+  const inputRef = useRef<TextInput>(null);
   const submit = async () => { const value = text.trim(); if (!value) return; await onSave(value); setText(""); onClose(); };
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" onShow={() => inputRef.current?.focus()} onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} />
         <View style={styles.sheet}>
           <View style={styles.handle} />
           <View style={styles.sheetHeader}><View><Text style={styles.eyebrow}>HIZLI ŞÜKRAN</Text><Text style={styles.title}>Şu an ne için şükrediyorsun?</Text></View><Pressable onPress={onClose} style={styles.close}><Ionicons name="close" size={20} color={colors.muted} /></Pressable></View>
-          <View style={styles.composer}><TextInput autoFocus value={text} onChangeText={setText} multiline maxLength={220} placeholder="Mesajını yaz..." placeholderTextColor="#A9B1AB" style={styles.input} /><Pressable onPress={submit} disabled={!text.trim()} style={({ pressed }) => [styles.send, !text.trim() && styles.disabled, pressed && styles.pressed]} accessibilityLabel="Şükranı kaydet"><Ionicons name="arrow-up" size={18} color="#FFFFFF" /></Pressable></View>
+          <View style={styles.composer}><TextInput ref={inputRef} autoFocus value={text} onChangeText={setText} multiline maxLength={1001} placeholder="Mesajını yaz..." placeholderTextColor="#A9B1AB" style={styles.input} /><Pressable onPress={submit} disabled={!text.trim()} style={({ pressed }) => [styles.send, !text.trim() && styles.disabled, pressed && styles.pressed]} accessibilityLabel="Şükranı kaydet"><Ionicons name="arrow-up" size={18} color="#FFFFFF" /></Pressable></View>
         </View>
       </KeyboardAvoidingView>
     </Modal>

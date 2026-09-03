@@ -1,21 +1,22 @@
-# Şükür Günlüğü — Özellik Takibi
+# Şükür Günlüğü — Geliştirme Takibi
 
-## Tamamlananlar
+## Bu turda tamamlananlar
 
-- [x] Üst alana yuvarlak **Ayarlar** ve **Hızlı şükran** butonları eklendi.
-- [x] WhatsApp/Telegram benzeri klavye üstü hızlı şükran modalı eklendi.
-- [x] Bildirim hatırlatıcısı için manuel saat ve dakika alanları eklendi.
-- [x] Dinleme ayarları: çalma hızı, şükranlar arası bekleme ve atmosfer ses yüzdesi.
-- [x] Telefonda ses dosyası seçme ve atmosfer müziği olarak döngüde çalma altyapısı eklendi.
-- [x] Şükran okunurken atmosfer sesinin kısılması, geçişte 200 ms yumuşak ses geçişi eklendi.
-- [x] Günlük ekranındaki dinleme butonu **Şükürlerin** başlığının yanına taşındı.
-- [x] Önceki/sonraki şükran kontrollü, sekmeler arasında sabit kalan mini çalar eklendi.
-- [x] Mini çalarda oynatılan şükran metni gösteriliyor.
-- [x] Geçmiş ekranına rastgele kayıt sayısı girişi ve rastgele dinleme butonu eklendi.
-- [x] TypeScript, test ve lint kontrolleri çalıştırıldı.
+| Alan | Durum | Not |
+|---|---:|---|
+| Mini çalar | Tamamlandı | Genişletildi; kapatma gizler, durdurma TTS ve atmosferi birlikte durdurur; önceki/sonraki geçişlerde callback yarışları engellendi. |
+| Tam ekran oynatma | Tamamlandı | Mini çalara dokununca Spotify benzeri tam ekran dinleme ekranı açılıyor. |
+| Arka plan oynatma | Tamamlandı | Audio session arka plan için etkinleştirildi; Android’de çalan şükranı gösteren sabit bildirim güncelleniyor. |
+| Günlük hedefi | Tamamlandı | Kullanıcı hedefi yazabiliyor; ilerleme, hedef çizgisi, tamamlandı ve hedef aşımı yüzdesi gösteriliyor. |
+| Günlük giriş | Tamamlandı | Karakter sınırı 1001; kaydetme sonrasında klavye odağı korunuyor. |
+| Üst aksiyonlar | Tamamlandı | Ayarlar ve Hızlı Şükran tüm ekranlarda aynı boyut/sırayla görünüyor; Ayarlar ve tam ekran oynatmada mini çalar gizli kalıyor. |
+| Bulut giriş/profile | Tamamlandı | Giriş URL kontrolü düzeltildi; ad, soyad bilgisi ve avatar URL’si profile taşınıyor. |
+| Doğrulama | Tamamlandı | 7 test geçti, TypeScript ve lint temiz. |
 
-## Bilinen Notlar / Sonraki İyileştirmeler
+## Bilinen platform notları
 
-- [ ] Atmosfer müziği dosyası cihazda kalır; bulut senkronizasyonuna ses dosyası yükleme dahil değil.
-- [ ] TTS, Android sistem ses motorunu kullanır; kullanılabilir sesler cihaz dil ayarına bağlıdır.
-- [ ] EAS APK, native bildirim ve document-picker değişikliklerini içerecek şekilde yeniden oluşturulmalı.
+Android sistem bildiriminde çalan şükranın başlığı ve metni gösterilir. Gerçek Spotify tarzı medya butonları için native medya oturumu/lock-screen kontrolü gerekir; mevcut Expo bildirim API’si standart bildirim sunar. Atmosfer ses dosyası cihazda tutulur ve bulut yedeğine yüklenmez.
+
+## Sonraki işlem
+
+- [ ] Yeni APK derlemesini başlat ve Android indirme bağlantısını paylaş.

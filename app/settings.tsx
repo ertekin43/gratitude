@@ -8,6 +8,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { DEFAULT_REMINDER, loadReminderSettings, setDailyReminder, type ReminderSettings } from "@/lib/reminders";
 import { DEFAULT_LISTENING_SETTINGS, loadListeningSettings, saveListeningSettings, type ListeningSettings } from "@/lib/listening-settings";
 import { usePlayer } from "@/lib/player-context";
+import { AppTopActions } from "@/components/app-top-actions";
 
 const colors = { background: "#F8F6F0", surface: "#FFFFFF", ink: "#163B2B", muted: "#7B8A82", border: "#E6E8E2", primary: "#2F7D5A", primarySoft: "#E1F0E8", orange: "#E9905E", orangeSoft: "#FFF0E6", danger: "#C75C51" };
 
@@ -53,7 +54,7 @@ export default function SettingsScreen() {
     <ScreenContainer containerClassName="bg-[#F8F6F0]" safeAreaClassName="bg-[#F8F6F0]">
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <View style={styles.header}><Pressable onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}><Ionicons name="chevron-back" size={22} color={colors.ink} /></Pressable><View style={styles.headerCopy}><Text style={styles.eyebrow}>UYGULAMAN</Text><Text style={styles.title}>Ayarlar</Text></View><View style={styles.settingsIcon}><Ionicons name="settings-outline" size={20} color={colors.primary} /></View></View>
+          <View style={styles.header}><Pressable onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}><Ionicons name="chevron-back" size={22} color={colors.ink} /></Pressable><View style={styles.headerCopy}><Text style={styles.eyebrow}>UYGULAMAN</Text><Text style={styles.title}>Ayarlar</Text></View><AppTopActions /></View>
 
           <Text style={styles.sectionTitle}>Bildirim hatırlatıcı</Text>
           <View style={styles.card}>

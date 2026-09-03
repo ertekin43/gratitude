@@ -31,6 +31,7 @@ export function useAuth(options?: UseAuthOptions) {
             openId: apiUser.openId,
             name: apiUser.name,
             email: apiUser.email,
+            avatarUrl: apiUser.avatarUrl,
             loginMethod: apiUser.loginMethod,
             lastSignedIn: new Date(apiUser.lastSignedIn),
           };

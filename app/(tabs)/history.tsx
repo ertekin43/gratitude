@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ScreenContainer } from "@/components/screen-container";
 import { localDateKey, loadGratitudeEntries, pickRandomEntries, saveGratitudeEntries, type GratitudeEntry } from "@/lib/gratitude";
 import { usePlayer } from "@/lib/player-context";
+import { AppTopActions } from "@/components/app-top-actions";
 
 const colors = {
   background: "#F8F6F0",
@@ -114,7 +115,7 @@ export default function HistoryScreen() {
             <Text style={styles.eyebrow}>ZAMAN İÇİNDE</Text>
             <Text style={styles.title}>Geçmişin</Text>
           </View>
-          <View style={styles.archiveIcon}><Ionicons name="time-outline" size={21} color={colors.primary} /></View>
+          <View style={styles.headerRight}><View style={styles.archiveIcon}><Ionicons name="time-outline" size={21} color={colors.primary} /></View><AppTopActions /></View>
         </View>
         <Text style={styles.intro}>İyi olanı fark ettiğin günlere dön.</Text>
         <View style={styles.randomCard}>
@@ -190,11 +191,12 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 22, paddingBottom: 34, paddingTop: 18 },
   header: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
+  headerRight: { alignItems: "center", flexDirection: "row", gap: 8 },
   eyebrow: { color: colors.primary, fontSize: 11, fontWeight: "800", letterSpacing: 1.8, marginBottom: 4 },
   title: { color: colors.ink, fontSize: 30, fontWeight: "800", letterSpacing: -0.8 },
   archiveIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: 20, height: 42, justifyContent: "center", width: 42 },
   intro: { color: colors.muted, fontSize: 13, marginBottom: 23, marginTop: 7 },
-  randomCard: { alignItems: "center", backgroundColor: colors.orangeSoft, borderRadius: 18, flexDirection: "row", marginBottom: 15, padding: 11 },
+  randomCard: { alignItems: "center", backgroundColor: colors.orangeSoft, borderRadius: 18, flexDirection: "row", marginBottom: 15, minHeight: 66, padding: 15 },
   randomIcon: { alignItems: "center", backgroundColor: "#FFE0C9", borderRadius: 14, height: 31, justifyContent: "center", width: 31 },
   randomCopy: { flex: 1, marginLeft: 9 },
   randomTitle: { color: colors.ink, fontSize: 12, fontWeight: "800" },

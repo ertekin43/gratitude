@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -19,6 +19,7 @@ import { DEFAULT_REMINDER, loadReminderSettings, setDailyReminder, type Reminder
 import { startOAuthLogin } from "@/constants/oauth";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/use-auth";
+import { AppTopActions } from "@/components/app-top-actions";
 
 const colors = {
   background: "#F8F6F0",
@@ -129,8 +130,8 @@ export default function ProfileScreen() {
     <ScreenContainer containerClassName="bg-[#F8F6F0]" safeAreaClassName="bg-[#F8F6F0]">
       <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshEntries} tintColor={colors.primary} />} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <View><Text style={styles.eyebrow}>KENDİNE DÖN</Text><Text style={styles.title}>Profilin</Text></View>
-          <View style={styles.avatar}><Text style={styles.avatarText}>{avatarLetter}</Text></View>
+          <View style={styles.profileHeading}><Text style={styles.eyebrow}>KENDİNE DÖN</Text><Text style={styles.title}>Profilin</Text>{user?.name ? <Text style={styles.userName}>{user.name}</Text> : null}{user?.email ? <Text style={styles.userEmail}>{user.email}</Text> : null}</View>
+          <View style={styles.headerRight}>{user?.avatarUrl ? <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} /> : <View style={styles.avatar}><Text style={styles.avatarText}>{avatarLetter}</Text></View>}<AppTopActions /></View>
         </View>
 
         <View style={styles.quoteCard}>
@@ -176,10 +177,15 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 22, paddingTop: 18, paddingBottom: 34 },
   header: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: 22 },
+  headerRight: { alignItems: "center", flexDirection: "row", gap: 8 },
+  profileHeading: { flex: 1 },
   eyebrow: { color: colors.primary, fontSize: 11, fontWeight: "800", letterSpacing: 1.8, marginBottom: 4 },
   title: { color: colors.ink, fontSize: 30, fontWeight: "800", letterSpacing: -0.8 },
   avatar: { alignItems: "center", backgroundColor: colors.ink, borderRadius: 22, height: 44, justifyContent: "center", width: 44 },
   avatarText: { color: "#FFFFFF", fontSize: 18, fontWeight: "800" },
+  avatarImage: { borderRadius: 22, height: 44, width: 44 },
+  userName: { color: colors.ink, fontSize: 13, fontWeight: "800", marginTop: 7 },
+  userEmail: { color: colors.muted, fontSize: 10, marginTop: 2 },
   quoteCard: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 22, borderWidth: 1, flexDirection: "row", marginBottom: 21, padding: 17 },
   quoteIcon: { alignItems: "center", backgroundColor: colors.orangeSoft, borderRadius: 16, height: 34, justifyContent: "center", marginRight: 13, width: 34 },
   quoteCopy: { flex: 1 },
