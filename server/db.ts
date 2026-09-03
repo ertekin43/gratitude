@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { gratitudeEntries, InsertGratitudeEntry, InsertUser, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,24 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+export async function getUserGratitudeEntries(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(gratitudeEntries).where(eq(gratitudeEntries.userId, userId));
+}
+
+export async function upsertGratitudeEntries(userId: number, entries: Omit<InsertGratitudeEntry, "userId">[]) {
+  const db = await getDb();
+  if (!db || entries.length === 0) return;
+  for (const entry of entries) {
+    await db.insert(gratitudeEntries).values({ ...entry, userId }).onDuplicateKeyUpdate({
+      set: { text: entry.text, createdAt: entry.createdAt, updatedAt: new Date() },
+    });
+  }
+}
+
+export async function deleteUserGratitudeEntries(userId: number, ids: string[]) {
+  const db = await getDb();
+  if (!db || ids.length === 0) return;
+  await db.delete(gratitudeEntries).where(and(eq(gratitudeEntries.userId, userId), inArray(gratitudeEntries.id, ids)));
+}

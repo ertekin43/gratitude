@@ -5,6 +5,7 @@ import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 
 import { ScreenContainer } from "@/components/screen-container";
+import { GratitudePlayer } from "@/components/gratitude-player";
 import { loadGratitudeEntries, saveGratitudeEntries, type GratitudeEntry } from "@/lib/gratitude";
 
 const colors = {
@@ -32,6 +33,7 @@ export default function HomeScreen() {
   const [draft, setDraft] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [playerVisible, setPlayerVisible] = useState(false);
 
   const refreshEntries = useCallback(async () => {
     setRefreshing(true);
@@ -110,6 +112,16 @@ export default function HomeScreen() {
                   <Ionicons name="sparkles-outline" size={22} color={colors.primary} />
                 </View>
               </View>
+              <Pressable
+                onPress={() => setPlayerVisible(true)}
+                disabled={todayEntries.length === 0}
+                style={({ pressed }) => [styles.listenTodayButton, pressed && styles.pressed, todayEntries.length === 0 && styles.listenTodayDisabled]}
+              >
+                <Ionicons name="volume-high-outline" size={17} color={colors.primary} />
+                <Text style={styles.listenTodayText}>Bugünün şükürlerini dinle</Text>
+                <Ionicons name="chevron-forward" size={15} color={colors.primary} />
+              </Pressable>
+              <GratitudePlayer entries={todayEntries} visible={playerVisible} onClose={() => setPlayerVisible(false)} />
 
               <View style={styles.composerCard}>
                 <View style={styles.composerTop}>
@@ -218,6 +230,9 @@ const styles = StyleSheet.create({
   todayCount: { color: colors.ink, fontSize: 22, fontWeight: "800", marginTop: 2 },
   todayUnit: { color: colors.muted, fontSize: 13, fontWeight: "600" },
   todayLeaf: { alignItems: "center", backgroundColor: "#CDE7D8", borderRadius: 17, height: 34, justifyContent: "center", width: 34 },
+  listenTodayButton: { alignItems: "center", alignSelf: "flex-start", backgroundColor: "#EEF5F0", borderRadius: 12, flexDirection: "row", gap: 7, marginTop: 9, paddingHorizontal: 11, paddingVertical: 8 },
+  listenTodayDisabled: { opacity: 0.45 },
+  listenTodayText: { color: colors.primary, fontSize: 11, fontWeight: "800" },
   composerCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,

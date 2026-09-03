@@ -87,6 +87,13 @@ const config: ExpoConfig = {
   plugins: [
     "expo-router",
     [
+      "expo-notifications",
+      {
+        icon: "./assets/images/android-icon-monochrome.png",
+        color: "#2F7D5A",
+      },
+    ],
+    [
       "expo-audio",
       {
         microphonePermission: "Allow $(PRODUCT_NAME) to access your microphone.",
@@ -124,6 +131,11 @@ const config: ExpoConfig = {
   experiments: {
     typedRoutes: true,
     reactCompiler: true,
+  },
+  extra: {
+    eas: {
+      projectId: "be3bb41a-af97-4748-b39f-ea7f3d95e6c8",
+    },
   },
 };
 

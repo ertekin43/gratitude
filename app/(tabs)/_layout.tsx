@@ -14,6 +14,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      initialRouteName="index"
       screenOptions={{
         tabBarActiveTintColor: colors.tint,
         headerShown: false,
@@ -28,6 +29,13 @@ export default function TabLayout() {
         },
       }}
     >
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: "Geçmiş",
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="clock.fill" color={color} />,
+        }}
+      />
       <Tabs.Screen
         name="index"
         options={{

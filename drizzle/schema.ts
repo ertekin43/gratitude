@@ -25,4 +25,13 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+export const gratitudeEntries = mysqlTable("gratitude_entries", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  userId: int("userId").notNull(),
+  text: text("text").notNull(),
+  createdAt: timestamp("createdAt").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type GratitudeEntry = typeof gratitudeEntries.$inferSelect;
+export type InsertGratitudeEntry = typeof gratitudeEntries.$inferInsert;
