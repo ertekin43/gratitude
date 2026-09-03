@@ -61,7 +61,7 @@ export function ScreenContainer({
         className={cn("flex-1", safeAreaClassName)}
         style={style}
       >
-        <View className={cn("flex-1", className)} style={{ paddingBottom: 112 }}>{children}</View>
+        <View className={cn("flex-1", className)}>{children}</View>
       </SafeAreaView>
     </View>
   );

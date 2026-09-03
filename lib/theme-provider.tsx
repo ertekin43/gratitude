@@ -28,6 +28,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { nativewindColorScheme.set(colorScheme); if (typeof document !== "undefined") { const root = document.documentElement; root.dataset.theme = themeName; root.classList.toggle("dark", colorScheme === "dark"); Object.entries(palette).forEach(([token, value]) => root.style.setProperty(`--color-${token}`, value)); } }, [colorScheme, palette, themeName]);
   const themeVariables = useMemo(() => vars(Object.fromEntries(Object.entries(palette).map(([key, value]) => [`color-${key}`, value]))), [palette]);
   const value = useMemo(() => ({ colorScheme, themeName, setColorScheme, setThemeName }), [colorScheme, themeName, setColorScheme, setThemeName]);
-  return <ThemeContext.Provider value={value}><View style={[{ flex: 1 }, themeVariables]}>{children}<View pointerEvents="none" style={[StyleSheet.absoluteFillObject, { backgroundColor: palette.primary, opacity: 0.035 }]} /></View></ThemeContext.Provider>;
+  return <ThemeContext.Provider value={value}><View style={[{ flex: 1, backgroundColor: palette.background }, themeVariables]}>{children}<View pointerEvents="none" style={[StyleSheet.absoluteFillObject, { backgroundColor: palette.primary, opacity: 0.075 }]} /></View></ThemeContext.Provider>;
 }
 export function useThemeContext(): ThemeContextValue { const ctx = useContext(ThemeContext); if (!ctx) throw new Error("useThemeContext must be used within ThemeProvider"); return ctx; }
