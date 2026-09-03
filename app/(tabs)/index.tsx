@@ -9,6 +9,7 @@ import { QuickGratitudeModal } from "@/components/quick-gratitude-modal";
 import { loadGratitudeEntries, saveGratitudeEntries, type GratitudeEntry } from "@/lib/gratitude";
 import { usePlayer } from "@/lib/player-context";
 import { loadDailyGoal } from "@/lib/daily-goal";
+import { loadPreferences } from "@/lib/app-preferences";
 
 const colors = {
   background: "#F8F6F0",
@@ -43,7 +44,8 @@ export default function HomeScreen() {
 
   const refreshEntries = useCallback(async () => {
     setRefreshing(true);
-    setEntries(await loadGratitudeEntries());
+    const [loadedEntries, preferences] = await Promise.all([loadGratitudeEntries(), loadPreferences()]);
+    setEntries(preferences.entrySort === "oldest" ? [...loadedEntries].reverse() : loadedEntries);
     setRefreshing(false);
   }, []);
 
@@ -106,7 +108,6 @@ export default function HomeScreen() {
                     </View>
                     <Text style={styles.brandText}>ŞÜKÜR GÜNLÜĞÜ</Text>
                   </View>
-                  <Text style={styles.title}>Kalbinden geçenleri{`\n`}buraya bırak.</Text>
                 </View>
                 <View style={styles.topActions}>
                   <Pressable onPress={() => setQuickVisible(true)} style={({ pressed }) => [styles.roundButton, styles.roundButtonFilled, pressed && styles.pressed]} accessibilityLabel="Hızlı şükran yaz"><Ionicons name="flash-outline" size={18} color="#FFFFFF" /></Pressable>
@@ -114,18 +115,6 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              <View style={styles.todayCard}>
-                <View style={styles.todayIcon}>
-                  <Ionicons name="sunny" size={20} color={colors.orange} />
-                </View>
-                <View style={styles.todayCopy}>
-                  <Text style={styles.todayLabel}>BUGÜNÜN ŞÜKÜRLERİ</Text>
-                  <Text style={styles.todayCount}>{todayEntries.length} <Text style={styles.todayUnit}>madde</Text></Text>
-                </View>
-                <View style={styles.todayLeaf}>
-                  <Ionicons name="sparkles-outline" size={22} color={colors.primary} />
-                </View>
-              </View>
               <QuickGratitudeModal visible={quickVisible} onClose={() => setQuickVisible(false)} onSave={async (text) => {
                 const nextEntry: GratitudeEntry = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, text, createdAt: new Date().toISOString() };
                 const nextEntries = [nextEntry, ...entries];
@@ -165,7 +154,7 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              <View style={styles.goalCard}><View style={styles.goalHeader}><View style={styles.goalIcon}><Ionicons name="locate-outline" size={19} color={colors.primary} /></View><View style={styles.goalCopy}><Text style={styles.goalTitle}>Bugünün hedefi</Text><Text style={styles.goalText}>{todayEntries.length >= dailyGoal ? `Hedefini tamamladın. ${todayEntries.length} şükran kaydettin; istersen devam edebilirsin.` : `${dailyGoal - todayEntries.length} şükran daha eklediğinde hedefin tamamlanacak.`}</Text></View></View><View style={styles.goalTrack}><View style={[styles.goalFill, { width: `${Math.min(100, (todayEntries.length / Math.max(dailyGoal, todayEntries.length, 1)) * 100)}%` }]} />{todayEntries.length > dailyGoal ? <View style={[styles.goalMarker, { left: `${(dailyGoal / todayEntries.length) * 100}%` }]} /> : null}</View><Text style={styles.goalStatus}>{todayEntries.length > dailyGoal ? `Hedefinin %${Math.round((todayEntries.length / dailyGoal - 1) * 100)} üzerindesin` : todayEntries.length === dailyGoal ? "Hedef tamamlandı" : `${todayEntries.length}/${dailyGoal} şükran`}</Text></View>
+              <View style={styles.goalCard}><View style={styles.goalHeader}><View style={styles.goalIcon}><Ionicons name={todayEntries.length >= dailyGoal ? "checkmark-circle-outline" : "locate-outline"} size={19} color={colors.primary} /></View><View style={styles.goalCopy}><Text style={styles.goalTitle}>Bugünün hedefi</Text><Text style={styles.goalText}>{todayEntries.length >= dailyGoal ? `Hedefini tamamladın. ${todayEntries.length} şükran kaydettin; istersen devam edebilirsin.` : `${dailyGoal - todayEntries.length} şükran daha eklediğinde hedefin tamamlanacak.`}</Text></View></View><View style={styles.goalTrack}><View style={[styles.goalFill, { width: `${Math.min(100, (dailyGoal / Math.max(dailyGoal, todayEntries.length, 1)) * 100)}%` }]} />{todayEntries.length > dailyGoal ? <View style={[styles.goalOverflow, { width: `${((todayEntries.length - dailyGoal) / todayEntries.length) * 100}%` }]} /> : null}{todayEntries.length > dailyGoal ? <View style={[styles.goalMarker, { left: `${(dailyGoal / todayEntries.length) * 100}%` }]} /> : null}</View><Text style={styles.goalStatus}>{todayEntries.length > dailyGoal ? `Hedefinin %${Math.round((todayEntries.length / dailyGoal - 1) * 100)} üzerindesin` : todayEntries.length === dailyGoal ? "Hedef tamamlandı" : `${todayEntries.length}/${dailyGoal} şükran`}</Text></View>
 
               <View style={styles.listHeader}>
                 <View>
@@ -271,7 +260,7 @@ const styles = StyleSheet.create({
   addButton: { alignItems: "center", backgroundColor: colors.primaryDark, borderRadius: 13, flexDirection: "row", gap: 8, paddingHorizontal: 15, paddingVertical: 10 },
   addButtonDisabled: { opacity: 0.5 },
   addButtonText: { color: "#FFFFFF", fontSize: 13, fontWeight: "800" },
-  goalCard: { backgroundColor: "#EAF3ED", borderColor: "#D5E8DA", borderRadius: 20, borderWidth: 1, marginTop: 14, padding: 15 }, goalHeader: { alignItems: "center", flexDirection: "row" }, goalIcon: { alignItems: "center", backgroundColor: "#D2E9D9", borderRadius: 15, height: 32, justifyContent: "center", width: 32 }, goalCopy: { flex: 1, marginLeft: 10 }, goalTitle: { color: colors.ink, fontSize: 13, fontWeight: "800" }, goalText: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 3 }, goalTrack: { backgroundColor: "#CFE3D4", borderRadius: 4, height: 8, marginTop: 16, overflow: "visible", position: "relative" }, goalFill: { backgroundColor: colors.primary, borderRadius: 4, height: 8 }, goalMarker: { backgroundColor: colors.ink, height: 18, position: "absolute", top: -5, width: 2 }, goalStatus: { color: colors.primary, fontSize: 11, fontWeight: "800", marginTop: 10, textAlign: "right" },
+  goalCard: { backgroundColor: "#EAF3ED", borderColor: "#D5E8DA", borderRadius: 20, borderWidth: 1, marginTop: 14, padding: 15 }, goalHeader: { alignItems: "center", flexDirection: "row" }, goalIcon: { alignItems: "center", backgroundColor: "#D2E9D9", borderRadius: 15, height: 32, justifyContent: "center", width: 32 }, goalCopy: { flex: 1, marginLeft: 10 }, goalTitle: { color: colors.ink, fontSize: 13, fontWeight: "800" }, goalText: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 3 }, goalTrack: { backgroundColor: "#CFE3D4", borderRadius: 4, height: 8, marginTop: 16, overflow: "visible", position: "relative" }, goalFill: { backgroundColor: colors.primary, borderRadius: 4, height: 8 }, goalOverflow: { backgroundColor: colors.primaryDark, borderRadius: 3, height: 7, position: "absolute", right: 0 }, goalMarker: { backgroundColor: colors.ink, height: 18, position: "absolute", top: -5, width: 2 }, goalStatus: { color: colors.primary, fontSize: 11, fontWeight: "800", marginTop: 10, textAlign: "right" },
   pressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
   listHeader: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: 12, marginTop: 28 },
   sectionTitle: { color: colors.ink, fontSize: 18, fontWeight: "800" },

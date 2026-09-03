@@ -4,6 +4,7 @@ import {
   getDayChart,
   getEntriesForDay,
   getMonthChart,
+  getYearChart,
   getWeekChart,
   isToday,
   isWithinCurrentMonth,
@@ -12,6 +13,7 @@ import {
   type GratitudeEntry,
 } from "../lib/gratitude";
 import { normalizeListeningSettings } from "../lib/listening-settings";
+import { getLevelForCount, getRankForCount } from "../lib/profile-ranks";
 
 const reference = new Date(2026, 8, 3, 12, 0, 0);
 
@@ -83,5 +85,18 @@ describe("gratitude date helpers", () => {
 
   it("normalizes listening settings to safe device limits", () => {
     expect(normalizeListeningSettings({ rate: 4, gapSeconds: -2, ambienceVolume: 130 })).toMatchObject({ rate: 2, gapSeconds: 0, ambienceVolume: 100 });
+  });
+
+  it("starts the annual chart in January and counts each month", () => {
+    const chart = getYearChart([entry("jan", "2026-01-02T08:00:00.000Z"), entry("dec", "2026-12-02T08:00:00.000Z")], reference);
+    expect(chart).toHaveLength(12);
+    expect(chart[0].value).toBe(1);
+    expect(chart[11].value).toBe(1);
+  });
+
+  it("maps 1260 recent gratitudes to the chess king rank", () => {
+    expect(getRankForCount(1259).name).toBe("Vezir");
+    expect(getRankForCount(1260).name).toBe("Şah");
+    expect(getLevelForCount(1260)).toBe(127);
   });
 });

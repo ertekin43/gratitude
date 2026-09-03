@@ -115,3 +115,11 @@ export function pickRandomEntries(entries: GratitudeEntry[], count: number, rand
   const safeCount = Math.max(0, Math.min(entries.length, Math.floor(count)));
   return [...entries].sort(() => random() - 0.5).slice(0, safeCount);
 }
+
+export function getYearChart(entries: GratitudeEntry[], reference = new Date()) {
+  const year = reference.getFullYear();
+  return Array.from({ length: 12 }, (_, month) => ({
+    label: new Date(year, month, 1).toLocaleDateString("tr-TR", { month: "short" }).replace(".", ""),
+    value: entries.filter((entry) => { const date = new Date(entry.createdAt); return date.getFullYear() === year && date.getMonth() === month; }).length,
+  }));
+}

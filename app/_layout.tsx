@@ -5,7 +5,9 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
-import { Platform } from "react-native";
+import { Platform, Pressable, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import * as LocalAuthentication from "expo-local-authentication";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import {
@@ -21,6 +23,7 @@ import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-run
 import { configureNotifications } from "@/lib/reminders";
 import { PlayerProvider } from "@/lib/player-context";
 import { PersistentGratitudePlayer } from "@/components/persistent-gratitude-player";
+import { loadPreferences } from "@/lib/app-preferences";
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -28,6 +31,20 @@ const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
 export const unstable_settings = {
   anchor: "(tabs)",
 };
+
+function PrivacyGuard({ children }: { children: React.ReactNode }) {
+  const [locked, setLocked] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const authenticate = useCallback(async () => {
+    setChecking(true);
+    const preferences = await loadPreferences();
+    if (Platform.OS === "web" || !preferences.privacyLock) { setLocked(false); setChecking(false); return; }
+    const result = await LocalAuthentication.authenticateAsync({ promptMessage: "Şükür Günlüğü kilidini aç", cancelLabel: "İptal", disableDeviceFallback: false });
+    setLocked(!result.success); setChecking(false);
+  }, []);
+  useEffect(() => { authenticate(); }, [authenticate]);
+  return <View style={{ flex: 1 }}>{children}{locked ? <View style={{ alignItems: "center", backgroundColor: "#F8F6F0", bottom: 0, justifyContent: "center", left: 0, position: "absolute", right: 0, top: 0 }}><Ionicons name="lock-closed" size={40} color="#2F7D5A" /><Text style={{ color: "#163B2B", fontSize: 20, fontWeight: "800", marginTop: 14 }}>Günlük kilitli</Text><Text style={{ color: "#7B8A82", fontSize: 12, marginTop: 5 }}>Devam etmek için cihaz kilidini doğrula.</Text><Pressable disabled={checking} onPress={authenticate} style={{ backgroundColor: "#2F7D5A", borderRadius: 13, marginTop: 20, paddingHorizontal: 18, paddingVertical: 12 }}><Text style={{ color: "#FFFFFF", fontWeight: "800" }}>{checking ? "Kontrol ediliyor" : "Yeniden dene"}</Text></Pressable></View> : null}</View>;
+}
 
 export default function RootLayout() {
   const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS;
@@ -85,6 +102,7 @@ export default function RootLayout() {
   const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PlayerProvider>
+        <PrivacyGuard>
         <trpc.Provider client={trpcClient} queryClient={queryClient}>
           <QueryClientProvider client={queryClient}>
           {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
@@ -98,6 +116,7 @@ export default function RootLayout() {
           </QueryClientProvider>
         </trpc.Provider>
         <PersistentGratitudePlayer />
+        </PrivacyGuard>
       </PlayerProvider>
     </GestureHandlerRootView>
   );
