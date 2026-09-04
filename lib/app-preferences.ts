@@ -9,9 +9,9 @@ export type AppPreferences = { privacyLock: boolean; theme: string; entrySort: E
 export type ProfilePreferences = { displayName: string; bio: string; avatarUri: string | null };
 export const APP_PREFERENCES_KEY = "sukur-gunlugu.preferences.v1";
 export const PROFILE_PREFERENCES_KEY = "sukur-gunlugu.profile.v1";
-export const defaultPreferences: AppPreferences = { privacyLock: false, theme: "Adaçayı", entrySort: "newest" };
+export const defaultPreferences: AppPreferences = { privacyLock: false, theme: "Zümrüt Bahçe", entrySort: "newest" };
 export const defaultProfile: ProfilePreferences = { displayName: "", bio: "", avatarUri: null };
-export const themes = ["Adaçayı", "Günışığı", "Okyanus", "Lavanta", "Gül Kurusu", "Gece", "Kum", "Orman", "Gökyüzü", "Şeftali"];
+export const themes = ["Zümrüt Bahçe", "Altın Güneş", "Yakut Akşamı", "Kraliyet Moru", "Mercan Rüyası", "Gece Safiri", "Çöl Bakırı", "Turkuaz Lagün", "Safran İncisi", "Buzul Mavisi"];
 
 export async function loadPreferences(): Promise<AppPreferences> { try { const value = JSON.parse((await AsyncStorage.getItem(APP_PREFERENCES_KEY)) || "null"); return { ...defaultPreferences, ...(value || {}) }; } catch { return defaultPreferences; } }
 export async function savePreferences(value: AppPreferences) { await AsyncStorage.setItem(APP_PREFERENCES_KEY, JSON.stringify(value)); }
