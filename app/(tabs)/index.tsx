@@ -42,7 +42,6 @@ export default function HomeScreen() {
   const { playEntries } = usePlayer();
   const inputRef = useRef<TextInput>(null);
   const [dailyGoal, setDailyGoal] = useState(5);
-  const favoriteEntries = entries.filter((entry) => entry.favorite);
   const dailyInspiration = inspiration[new Date().getDate() % inspiration.length];
 
   const refreshEntries = useCallback(async () => {
@@ -95,7 +94,7 @@ export default function HomeScreen() {
     <ScreenContainer containerClassName="bg-[#F8F6F0]" safeAreaClassName="bg-[#F8F6F0]">
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.flex}>
         <FlatList
-          data={entries}
+          data={todayEntries}
           keyExtractor={(item) => item.id}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -163,15 +162,13 @@ export default function HomeScreen() {
               <View style={styles.listHeader}>
                 <View>
                   <Text style={styles.sectionTitle}>Şükürlerin</Text>
-                  <Text style={styles.sectionSubtitle}>{entries.length ? "İyi olanı fark ettiğin anlar" : "İlk maddeni yazarak başla"}</Text>
                 </View>
                 <View style={styles.listHeaderActions}>
-                  <Pressable onPress={() => playEntries(favoriteEntries)} disabled={!favoriteEntries.length} style={({ pressed }) => [styles.listenTodayButton, pressed && styles.pressed, !favoriteEntries.length && styles.listenTodayDisabled]} accessibilityLabel="Favori şükranları dinle"><Ionicons name="star-outline" size={15} color={colors.primary} /><Text style={styles.listenTodayText}>Favoriler</Text></Pressable>
                   <Pressable onPress={() => playEntries(todayEntries)} disabled={todayEntries.length === 0} style={({ pressed }) => [styles.listenTodayButton, pressed && styles.pressed, todayEntries.length === 0 && styles.listenTodayDisabled]} accessibilityLabel="Bugünün şükürlerini dinle">
                     <Ionicons name="volume-high-outline" size={15} color={colors.primary} />
                     <Text style={styles.listenTodayText}>Dinle</Text>
                   </Pressable>
-                  <View style={styles.totalPill}><Text style={styles.totalPillText}>{entries.length}</Text></View>
+                  <View style={styles.totalPill}><Text style={styles.totalPillText}>{todayEntries.length}</Text></View>
                 </View>
               </View>
             </View>
@@ -188,7 +185,7 @@ export default function HomeScreen() {
           renderItem={({ item, index }) => (
             <View style={styles.entryCard}>
               <View style={[styles.entryNumber, index === 0 && styles.entryNumberHighlight]}>
-                <Text style={[styles.entryNumberText, index === 0 && styles.entryNumberTextHighlight]}>{String(entries.length - index).padStart(2, "0")}</Text>
+                <Text style={[styles.entryNumberText, index === 0 && styles.entryNumberTextHighlight]}>{String(todayEntries.length - index).padStart(2, "0")}</Text>
               </View>
               <View style={styles.entryCopy}>
                 <Text style={styles.entryText}>{item.text}</Text>
@@ -225,7 +222,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
     width: 25,
   },
-  brandText: { color: colors.primary, fontSize: 11, fontWeight: "800", letterSpacing: 1.5 },
+  brandText: { color: colors.primary, fontSize: 14, fontWeight: "800", letterSpacing: 1.5 },
   headerDot: { backgroundColor: colors.orange, borderRadius: 4, height: 8, marginTop: 12, width: 8 },
   topActions: { alignItems: "center", flexDirection: "row", gap: 8, marginTop: 7 },
   roundButton: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 21, borderWidth: 1, height: 42, justifyContent: "center", width: 42 },
@@ -251,6 +248,7 @@ const styles = StyleSheet.create({
   listHeaderActions: { alignItems: "center", flexDirection: "row", gap: 7 },
   inspirationCard: { alignItems: "center", backgroundColor: "#FFF4E8", borderRadius: 15, flexDirection: "row", marginBottom: 12, padding: 12 }, inspirationText: { color: colors.ink, flex: 1, fontSize: 12, fontWeight: "600", marginLeft: 8 },
   composerCard: {
+    minHeight: 230,
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: 22,
@@ -259,8 +257,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   composerTop: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
-  composerTitle: { color: colors.ink, fontSize: 15, fontWeight: "800" },
-  input: { color: colors.ink, fontSize: 14, lineHeight: 21, minHeight: 86, paddingTop: 15 },
+  composerTitle: { color: colors.ink, fontSize: 20, fontWeight: "800" },
+  input: { color: colors.ink, fontSize: 16, lineHeight: 24, minHeight: 135, paddingTop: 15 },
   composerFooter: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
   characterCount: { color: colors.muted, fontSize: 11 },
   addButton: { alignItems: "center", backgroundColor: colors.primaryDark, borderRadius: 13, flexDirection: "row", gap: 8, paddingHorizontal: 15, paddingVertical: 10 },
