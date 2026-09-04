@@ -10,6 +10,8 @@ import { loadGratitudeEntries, saveGratitudeEntries, type GratitudeEntry } from 
 import { usePlayer } from "@/lib/player-context";
 import { getGoalProgress, loadDailyGoal } from "@/lib/daily-goal";
 import { loadPreferences } from "@/lib/app-preferences";
+import { PlaylistPicker } from "@/components/playlist-picker";
+import { ensureDefaultPlaylist, savePlaylists, type Playlist } from "@/lib/playlists";
 
 const colors = {
   background: "#F8F6F0",
@@ -42,6 +44,9 @@ export default function HomeScreen() {
   const { playEntries } = usePlayer();
   const inputRef = useRef<TextInput>(null);
   const [dailyGoal, setDailyGoal] = useState(5);
+  const [playlistPickerOpen, setPlaylistPickerOpen] = useState(false);
+  const [pickerEntry, setPickerEntry] = useState<GratitudeEntry | null>(null);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const dailyInspiration = inspiration[new Date().getDate() % inspiration.length];
 
   const refreshEntries = useCallback(async () => {
@@ -84,6 +89,10 @@ export default function HomeScreen() {
     }
   }, [draft, entries, isSaving]);
 
+  const openPlaylistPicker = async (entry: GratitudeEntry) => { setPlaylists(await ensureDefaultPlaylist()); setPickerEntry(entry); setPlaylistPickerOpen(true); };
+  const addToPlaylist = async (playlist: Playlist) => { if (!pickerEntry) return; const nextEntries = entries.map((entry) => entry.id === pickerEntry.id ? { ...entry, favorite: true } : entry); const nextLists = playlists.map((item) => item.id === playlist.id ? { ...item, entryIds: item.entryIds.includes(pickerEntry.id) ? item.entryIds : [...item.entryIds, pickerEntry.id] } : item); setEntries(nextEntries); setPlaylists(nextLists); await saveGratitudeEntries(nextEntries); await savePlaylists(nextLists); setPlaylistPickerOpen(false); };
+  const createPlaylistForEntry = async (name: string) => { if (!pickerEntry) return; const created = { id: `playlist-${Date.now()}`, name, entryIds: [pickerEntry.id], createdAt: new Date().toISOString() }; const nextEntries = entries.map((entry) => entry.id === pickerEntry.id ? { ...entry, favorite: true } : entry); const nextLists = [...playlists, created]; setEntries(nextEntries); setPlaylists(nextLists); await saveGratitudeEntries(nextEntries); await savePlaylists(nextLists); setPlaylistPickerOpen(false); };
+
   const todayEntries = entries.filter((entry) => {
     const now = new Date();
     const date = new Date(entry.createdAt);
@@ -117,6 +126,7 @@ export default function HomeScreen() {
                 </View>
               </View>
 
+              <PlaylistPicker visible={playlistPickerOpen} playlists={playlists} onClose={() => setPlaylistPickerOpen(false)} onSelect={addToPlaylist} onCreate={createPlaylistForEntry} />
               <QuickGratitudeModal visible={quickVisible} onClose={() => setQuickVisible(false)} onSave={async (text) => {
                 const nextEntry: GratitudeEntry = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, text, createdAt: new Date().toISOString() };
                 const nextEntries = [nextEntry, ...entries];
@@ -194,7 +204,7 @@ export default function HomeScreen() {
                   <Text style={styles.entryMetaText}>{formatEntryDate(new Date(item.createdAt))} · {formatEntryTime(new Date(item.createdAt))}</Text>
                 </View>
               </View>
-              <Pressable onPress={async () => { const nextEntries = entries.map((entry) => entry.id === item.id ? { ...entry, favorite: !entry.favorite } : entry); setEntries(nextEntries); await saveGratitudeEntries(nextEntries); }} accessibilityLabel={item.favorite ? "Favoriden çıkar" : "Favoriye ekle"}><Ionicons name={item.favorite ? "star" : "star-outline"} size={20} color={item.favorite ? colors.orange : colors.muted} /></Pressable>
+              <Pressable onPress={() => openPlaylistPicker(item)} accessibilityLabel="Playlist’e ekle"><Ionicons name={item.favorite ? "star" : "star-outline"} size={20} color={item.favorite ? colors.orange : colors.muted} /></Pressable>
             </View>
           )}
         />
