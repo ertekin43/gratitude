@@ -10,7 +10,9 @@ import { DEFAULT_LISTENING_SETTINGS, loadListeningSettings, saveListeningSetting
 import { usePlayer } from "@/lib/player-context";
 import { AppTopActions } from "@/components/app-top-actions";
 import { loadDailyGoal, saveDailyGoal } from "@/lib/daily-goal";
-import { exportJournal, importJournal, loadPreferences, savePreferences, type AppPreferences } from "@/lib/app-preferences";
+import { exportJournal, importJournal, loadPreferences, loadProfilePreferences, savePreferences, saveProfilePreferences, type AppPreferences } from "@/lib/app-preferences";
+import { loadGratitudeEntries, saveGratitudeEntries } from "@/lib/gratitude";
+import { loadPlaylists, savePlaylists } from "@/lib/playlists";
 import { useThemeContext } from "@/lib/theme-provider";
 
 const colors = { background: "#F8F6F0", surface: "#FFFFFF", ink: "#163B2B", muted: "#7B8A82", border: "#E6E8E2", primary: "#2F7D5A", primarySoft: "#E1F0E8", orange: "#E9905E", orangeSoft: "#FFF0E6", danger: "#C75C51" };
@@ -39,8 +41,8 @@ export default function SettingsScreen() {
   }, []);
 
   const savePreference = async (next: AppPreferences) => { setPreferences(next); await savePreferences(next); setThemeName(next.theme); };
-  const exportData = async () => { await exportJournal(await (await import("@/lib/gratitude")).loadGratitudeEntries()); };
-  const importData = async () => { try { const imported = await importJournal(); if (imported) { const { saveGratitudeEntries } = await import("@/lib/gratitude"); await saveGratitudeEntries(imported); Alert.alert("İçe aktarıldı", `${imported.length} şükran maddesi yüklendi.`); } } catch { Alert.alert("Dosya okunamadı", "Bu dosya geçerli bir Şükür Günlüğü JSON dosyası değil."); } };
+  const exportData = async () => { const [entries, backupPreferences, profile, goal, playlists, listeningSettings, reminderSettings] = await Promise.all([loadGratitudeEntries(), loadPreferences(), loadProfilePreferences(), loadDailyGoal(), loadPlaylists(), loadListeningSettings(), loadReminderSettings()]); await exportJournal({ version: 2, exportedAt: new Date().toISOString(), entries, preferences: backupPreferences, profile, dailyGoal: goal, playlists, listening: listeningSettings, reminder: reminderSettings }); };
+  const importData = async () => { try { const imported = await importJournal(); if (imported) { await Promise.all([saveGratitudeEntries(imported.entries), savePreferences(imported.preferences), saveProfilePreferences(imported.profile), savePlaylists(imported.playlists), saveListeningSettings(imported.listening), setDailyReminder(imported.reminder), saveDailyGoal(imported.dailyGoal)]); setPreferences(imported.preferences); setGoalText(String(imported.dailyGoal)); Alert.alert("İçe aktarıldı", `${imported.entries.length} şükran, ayarlar ve playlistler geri yüklendi.`); } } catch { Alert.alert("Dosya okunamadı", "Bu dosya geçerli bir Şükür Günlüğü tam yedeği değil."); } };
 
   const saveAll = async () => {
     const hour = Math.min(23, Math.max(0, Number.parseInt(hourText, 10) || 0));

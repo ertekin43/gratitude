@@ -32,7 +32,6 @@ function formatEntryDate(date: Date) {
 function formatEntryTime(date: Date) {
   return date.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
 }
-const inspiration = ["Bugün fark ettiğin küçük bir güzelliği kaydet.", "Şükür, dikkatin yönünü değiştirir.", "Bugün sana iyi gelen bir kişiyi hatırla.", "Kendine gösterdiğin sabır için de şükredebilirsin."];
 
 export default function HomeScreen() {
   const [entries, setEntries] = useState<GratitudeEntry[]>([]);
@@ -47,7 +46,6 @@ export default function HomeScreen() {
   const [playlistPickerOpen, setPlaylistPickerOpen] = useState(false);
   const [pickerEntry, setPickerEntry] = useState<GratitudeEntry | null>(null);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  const dailyInspiration = inspiration[new Date().getDate() % inspiration.length];
 
   const refreshEntries = useCallback(async () => {
     setRefreshing(true);
@@ -134,11 +132,9 @@ export default function HomeScreen() {
                 await saveGratitudeEntries(nextEntries);
               }} />
 
-              <View style={styles.inspirationCard}><Ionicons name="sparkles-outline" size={16} color={colors.orange} /><Text style={styles.inspirationText}>{dailyInspiration}</Text></View>
               <View style={styles.composerCard}>
                 <View style={styles.composerTop}>
-                  <Text style={styles.composerTitle}>Şu an ne için şükrediyorsun?</Text>
-                  <Ionicons name="heart-outline" size={19} color={colors.orange} />
+                  <Text style={styles.composerTitle}>Bugün şükrettiğim şey...</Text>
                 </View>
                 <TextInput
                   value={draft}
@@ -146,7 +142,7 @@ export default function HomeScreen() {
                   multiline
                   ref={inputRef}
                   maxLength={1001}
-                  placeholder="Bir düşünce, bir insan, küçük bir an..."
+                  placeholder="Bugün şükrettiğim şey..."
                   placeholderTextColor="#A9B1AB"
                   style={styles.input}
                   textAlignVertical="top"

@@ -1,68 +1,15 @@
-import { View, type ViewProps } from "react-native";
+import { useMemo } from "react";
+import { PanResponder, View, type ViewProps } from "react-native";
+import { useRouter, useSegments } from "expo-router";
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
-
 import { cn } from "@/lib/utils";
 
-export interface ScreenContainerProps extends ViewProps {
-  /**
-   * SafeArea edges to apply. Defaults to ["top", "left", "right"].
-   * Bottom is typically handled by Tab Bar.
-   */
-  edges?: Edge[];
-  /**
-   * Tailwind className for the content area.
-   */
-  className?: string;
-  /**
-   * Additional className for the outer container (background layer).
-   */
-  containerClassName?: string;
-  /**
-   * Additional className for the SafeAreaView (content layer).
-   */
-  safeAreaClassName?: string;
-}
+export interface ScreenContainerProps extends ViewProps { edges?: Edge[]; className?: string; containerClassName?: string; safeAreaClassName?: string; }
+const tabRoutes = ["history", "index", "favorites", "profile"];
 
-/**
- * A container component that properly handles SafeArea and background colors.
- *
- * The outer View extends to full screen (including status bar area) with the background color,
- * while the inner SafeAreaView ensures content is within safe bounds.
- *
- * Usage:
- * ```tsx
- * <ScreenContainer className="p-4">
- *   <Text className="text-2xl font-bold text-foreground">
- *     Welcome
- *   </Text>
- * </ScreenContainer>
- * ```
- */
-export function ScreenContainer({
-  children,
-  edges = ["top", "left", "right"],
-  className,
-  containerClassName,
-  safeAreaClassName,
-  style,
-  ...props
-}: ScreenContainerProps) {
-  return (
-    <View
-      className={cn(
-        "flex-1",
-        "bg-background",
-        containerClassName
-      )}
-      {...props}
-    >
-      <SafeAreaView
-        edges={edges}
-        className={cn("flex-1", safeAreaClassName)}
-        style={style}
-      >
-        <View className={cn("flex-1", className)}>{children}</View>
-      </SafeAreaView>
-    </View>
-  );
+export function ScreenContainer({ children, edges = ["top", "left", "right"], className, containerClassName, safeAreaClassName, style, ...props }: ScreenContainerProps) {
+  const router = useRouter(); const segments = useSegments();
+  const activeTab = String(segments[0]) === "(tabs)" ? String(segments[1] || "index") : "";
+  const panResponder = useMemo(() => PanResponder.create({ onMoveShouldSetPanResponder: (_, gesture) => Boolean(activeTab) && Math.abs(gesture.dx) > 28 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.35, onPanResponderRelease: (_, gesture) => { if (!activeTab || Math.abs(gesture.dx) < 60) return; const current = tabRoutes.indexOf(activeTab); if (current < 0) return; const next = gesture.dx < 0 ? Math.min(tabRoutes.length - 1, current + 1) : Math.max(0, current - 1); if (next !== current) router.replace(`/(tabs)/${tabRoutes[next]}` as any); } }), [activeTab, router]);
+  return <View className={cn("flex-1", "bg-background", containerClassName)} {...props} {...panResponder.panHandlers}><SafeAreaView edges={edges} className={cn("flex-1", safeAreaClassName)} style={style}><View className={cn("flex-1", className)}>{children}</View></SafeAreaView></View>;
 }
