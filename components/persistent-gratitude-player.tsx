@@ -2,8 +2,9 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
 import { usePlayer } from "@/lib/player-context";
+import { ritual, ritualFonts } from "@/lib/design-system";
 
-const colors = { surface: "#163B2B", text: "#FFFFFF", muted: "#B9D7C7", accent: "#F1B37C", soft: "#2F7D5A" };
+const colors = { surface: ritual.night, text: ritual.ivory, muted: "#B8C8C0", accent: ritual.gold, soft: "#254E42" };
 
 export function PersistentGratitudePlayer() {
   const router = useRouter();
@@ -25,4 +26,4 @@ export function PersistentGratitudePlayer() {
   );
 }
 
-const styles = StyleSheet.create({ container: { alignItems: "center", backgroundColor: colors.surface, borderRadius: 21, bottom: 76, elevation: 10, flexDirection: "row", left: 8, minHeight: 86, padding: 13, position: "absolute", right: 8, shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 12, zIndex: 50 }, copy: { alignItems: "center", flex: 1, flexDirection: "row", marginRight: 7 }, iconWrap: { alignItems: "center", backgroundColor: colors.soft, borderRadius: 18, height: 38, justifyContent: "center", width: 38 }, copyText: { flex: 1, marginLeft: 10 }, title: { color: colors.text, fontSize: 13, fontWeight: "800" }, subtitle: { color: colors.muted, fontSize: 10, marginTop: 5 }, control: { alignItems: "center", height: 42, justifyContent: "center", width: 37 }, play: { alignItems: "center", backgroundColor: colors.accent, borderRadius: 21, height: 42, justifyContent: "center", width: 42 }, close: { alignItems: "center", height: 38, justifyContent: "center", marginLeft: 2, width: 31 }, disabled: { opacity: 0.3 }, pressed: { opacity: 0.72, transform: [{ scale: 0.95 }] } });
+const styles = StyleSheet.create({ container: { alignItems: "center", backgroundColor: colors.surface, borderColor: "#39564D", borderRadius: 8, borderWidth: 1, bottom: 76, elevation: 10, flexDirection: "row", left: 8, minHeight: 86, padding: 13, position: "absolute", right: 8, shadowColor: "#000", shadowOpacity: 0.24, shadowRadius: 14, zIndex: 50 }, copy: { alignItems: "center", flex: 1, flexDirection: "row", marginRight: 7 }, iconWrap: { alignItems: "center", backgroundColor: colors.soft, borderRadius: 18, height: 38, justifyContent: "center", width: 38 }, copyText: { flex: 1, marginLeft: 10 }, title: { color: colors.text, fontFamily: ritualFonts.bodySemi, fontSize: 13 }, subtitle: { color: colors.muted, fontFamily: ritualFonts.body, fontSize: 10, marginTop: 5 }, control: { alignItems: "center", height: 42, justifyContent: "center", width: 37 }, play: { alignItems: "center", backgroundColor: colors.accent, borderRadius: 21, height: 42, justifyContent: "center", width: 42 }, close: { alignItems: "center", height: 38, justifyContent: "center", marginLeft: 2, width: 31 }, disabled: { opacity: 0.3 }, pressed: { opacity: 0.72, transform: [{ scale: 0.95 }] } });

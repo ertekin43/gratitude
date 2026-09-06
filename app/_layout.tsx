@@ -2,6 +2,9 @@ import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useFonts } from "expo-font";
+import { Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold } from "@expo-google-fonts/manrope";
+import { PlayfairDisplay_500Medium_Italic, PlayfairDisplay_600SemiBold } from "@expo-google-fonts/playfair-display";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
@@ -47,6 +50,7 @@ function PrivacyGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({ Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, PlayfairDisplay_500Medium_Italic, PlayfairDisplay_600SemiBold });
   const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS;
   const initialFrame = initialWindowMetrics?.frame ?? DEFAULT_WEB_FRAME;
 
@@ -99,6 +103,8 @@ export default function RootLayout() {
     };
   }, [initialInsets, initialFrame]);
 
+  if (!fontsLoaded) return null;
+
   const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <PlayerProvider>
@@ -112,7 +118,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="oauth/callback" />
           </Stack>
-            <StatusBar style="auto" />
+            <StatusBar style="dark" />
           </QueryClientProvider>
         </trpc.Provider>
         <PersistentGratitudePlayer />

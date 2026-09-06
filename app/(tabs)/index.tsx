@@ -1,293 +1,39 @@
 import { useCallback, useRef, useState } from "react";
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
-
 import { ScreenContainer } from "@/components/screen-container";
 import { QuickGratitudeModal } from "@/components/quick-gratitude-modal";
-import { loadGratitudeEntries, saveGratitudeEntries, type GratitudeEntry } from "@/lib/gratitude";
-import { usePlayer } from "@/lib/player-context";
-import { getGoalProgress, loadDailyGoal } from "@/lib/daily-goal";
-import { loadPreferences } from "@/lib/app-preferences";
 import { PlaylistPicker } from "@/components/playlist-picker";
+import { getGoalProgress, loadDailyGoal } from "@/lib/daily-goal";
+import { loadGratitudeEntries, saveGratitudeEntries, type GratitudeEntry } from "@/lib/gratitude";
 import { ensureDefaultPlaylist, savePlaylists, type Playlist } from "@/lib/playlists";
+import { usePlayer } from "@/lib/player-context";
+import { ritual, ritualFonts } from "@/lib/design-system";
 
-const colors = {
-  background: "#F8F6F0",
-  surface: "#FFFFFF",
-  ink: "#163B2B",
-  muted: "#7B8A82",
-  border: "#E6E8E2",
-  primary: "#2F7D5A",
-  primaryDark: "#1E6043",
-  primarySoft: "#E1F0E8",
-  orange: "#E9905E",
-};
+const questions = ["Bugün seni görünmeden destekleyen ne oldu?", "Bugünden yanında taşımak istediğin küçük güzellik ne?", "Hangi an sana kendini evinde hissettirdi?"];
+const formatTime = (date: Date) => date.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
 
-function formatEntryDate(date: Date) {
-  return date.toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
+export default function JournalScreen() {
+  const router = useRouter(); const { playEntries } = usePlayer(); const input = useRef<TextInput>(null);
+  const [entries, setEntries] = useState<GratitudeEntry[]>([]); const [draft, setDraft] = useState(""); const [dailyGoal, setDailyGoal] = useState(3); const [saving, setSaving] = useState(false); const [refreshing, setRefreshing] = useState(false); const [quickVisible, setQuickVisible] = useState(false); const [pickerOpen, setPickerOpen] = useState(false); const [pickerEntry, setPickerEntry] = useState<GratitudeEntry | null>(null); const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const refresh = useCallback(async () => { setRefreshing(true); const [saved, goal] = await Promise.all([loadGratitudeEntries(), loadDailyGoal()]); setEntries(saved); setDailyGoal(goal); setRefreshing(false); }, []);
+  useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
+  const today = entries.filter((entry) => { const date = new Date(entry.createdAt); const now = new Date(); return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate(); });
+  const prompt = questions[new Date().getDate() % questions.length];
+  const save = useCallback(async (value = draft) => { const text = value.trim(); if (!text || saving) return; setSaving(true); const entry: GratitudeEntry = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, text, createdAt: new Date().toISOString() }; const next = [entry, ...entries]; setEntries(next); setDraft(""); try { await saveGratitudeEntries(next); if (Platform.OS !== "web") await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } finally { setSaving(false); } }, [draft, entries, saving]);
+  const openPicker = async (entry: GratitudeEntry) => { setPlaylists(await ensureDefaultPlaylist()); setPickerEntry(entry); setPickerOpen(true); };
+  const addToPlaylist = async (playlist: Playlist) => { if (!pickerEntry) return; const nextEntries = entries.map((entry) => entry.id === pickerEntry.id ? { ...entry, favorite: true } : entry); const nextLists = playlists.map((item) => item.id === playlist.id ? { ...item, entryIds: item.entryIds.includes(pickerEntry.id) ? item.entryIds : [...item.entryIds, pickerEntry.id] } : item); setEntries(nextEntries); setPlaylists(nextLists); await Promise.all([saveGratitudeEntries(nextEntries), savePlaylists(nextLists)]); setPickerOpen(false); };
+  const createPlaylist = async (name: string) => { if (!pickerEntry) return; const created = { id: `playlist-${Date.now()}`, name, entryIds: [pickerEntry.id], createdAt: new Date().toISOString() }; const nextEntries = entries.map((entry) => entry.id === pickerEntry.id ? { ...entry, favorite: true } : entry); const nextLists = [...playlists, created]; setEntries(nextEntries); setPlaylists(nextLists); await Promise.all([saveGratitudeEntries(nextEntries), savePlaylists(nextLists)]); setPickerOpen(false); };
+  return <ScreenContainer containerClassName="bg-[#F3EFE6]" safeAreaClassName="bg-[#F3EFE6]"><KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.flex}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={ritual.green} />}>
+    <View style={styles.topline}><View style={styles.brand}><Ionicons name="leaf-outline" size={18} color={ritual.green} /><Text style={styles.brandText}>ŞÜKÜR GÜNLÜĞÜ</Text></View><Pressable onPress={() => router.push("/settings")} style={styles.settings} accessibilityLabel="Ayarlar"><Ionicons name="options-outline" size={19} color={ritual.green} /></Pressable></View>
+    <View style={styles.dateLine}><Text style={styles.date}>BUGÜN · {new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long" }).toLocaleUpperCase("tr-TR")}</Text><Text style={styles.clock}>{formatTime(new Date())}</Text></View><View style={styles.ritualLine}><Text style={styles.ritual}>GÜNÜN İZİ</Text><Text style={styles.ritualPrompt}>Bir dakika kendine dön.</Text></View>
+    <View style={styles.page}><View style={styles.goldRule} /><View style={styles.pageHead}><Text style={styles.questionLabel}>BUGÜNÜN SORUSU</Text><Pressable onPress={() => setQuickVisible(true)}><Text style={styles.quick}>HIZLI NOT +</Text></Pressable></View><Text style={styles.question}>{prompt}</Text><TextInput ref={input} value={draft} onChangeText={setDraft} multiline maxLength={1001} placeholder="Sadece bir cümleyle başla…" placeholderTextColor="#A39B8F" style={styles.editor} textAlignVertical="top" accessibilityLabel="Şükür günlüğü yazısı" /><View style={styles.pageFoot}><View style={styles.tools}><Text style={styles.tool}>T</Text><Text style={styles.tool}>◌</Text><Text style={styles.tool}>⌁</Text></View><Text style={styles.count}>{draft.length} / 1001</Text></View></View>
+    <View style={styles.actions}><Pressable onPress={() => input.current?.focus()} style={styles.keepWriting}><Ionicons name="create-outline" size={18} color={ritual.green} /><Text style={styles.keepWritingText}>YAZMAYA DEVAM ET</Text></Pressable><Pressable onPress={() => save()} disabled={!draft.trim() || saving} style={[styles.save, (!draft.trim() || saving) && styles.disabled]}><Text style={styles.saveText}>{saving ? "İŞLENİYOR" : "GÜNLÜĞE İŞLE"}</Text><Ionicons name="arrow-forward" size={17} color={ritual.ivory} /></Pressable></View>
+    <View style={styles.rhythm}><View style={styles.ring}><Text style={styles.ringText}>{today.length}/{dailyGoal}</Text></View><View style={styles.rhythmCopy}><Text style={styles.rhythmTitle}>Bugünün ritmi</Text><Text style={styles.rhythmText}>{today.length >= dailyGoal ? "Bugün kendine verdiğin sözü tuttun." : `${Math.max(0, dailyGoal - today.length)} düşünce daha, ritüelin tamam.`}</Text></View><View style={styles.progress}><View style={[styles.progressFill, { width: `${getGoalProgress(today.length, dailyGoal) * 100}%` }]} /></View></View>
+    <View style={styles.sectionHead}><View><Text style={styles.sectionTitle}>Bugünün izleri</Text><Text style={styles.sectionCaption}>{today.length ? "Kaydettiğin anlar burada kalır." : "İlk cümleni bırakmak için güzel bir an."}</Text></View>{today.length ? <Pressable onPress={() => playEntries(today)} style={styles.listen}><Ionicons name="volume-high-outline" size={16} color={ritual.gold} /><Text style={styles.listenText}>DİNLE</Text></Pressable> : null}</View>
+    {today.length === 0 ? <Pressable onPress={() => input.current?.focus()} style={styles.empty}><Text style={styles.emptyMark}>✦</Text><Text style={styles.emptyText}>Bu sayfa ilk cümleni bekliyor.</Text></Pressable> : today.map((entry, index) => <View key={entry.id} style={styles.entry}><Text style={styles.entryNo}>{String(today.length - index).padStart(2, "0")}</Text><View style={styles.entryCopy}><Text style={styles.entryText}>{entry.text}</Text><Text style={styles.entryMeta}>{formatTime(new Date(entry.createdAt))} · bugün</Text></View><Pressable onPress={() => openPicker(entry)} accessibilityLabel="Hatırlama listesine ekle"><Ionicons name={entry.favorite ? "heart" : "heart-outline"} size={19} color={entry.favorite ? ritual.gold : ritual.muted} /></Pressable></View>)}
+  </ScrollView></KeyboardAvoidingView><QuickGratitudeModal visible={quickVisible} onClose={() => setQuickVisible(false)} onSave={async (text) => { await save(text); setQuickVisible(false); }} /><PlaylistPicker visible={pickerOpen} playlists={playlists} onClose={() => setPickerOpen(false)} onSelect={addToPlaylist} onCreate={createPlaylist} /></ScreenContainer>;
 }
-
-function formatEntryTime(date: Date) {
-  return date.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
-}
-
-export default function HomeScreen() {
-  const [entries, setEntries] = useState<GratitudeEntry[]>([]);
-  const [draft, setDraft] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [quickVisible, setQuickVisible] = useState(false);
-  const router = useRouter();
-  const { playEntries } = usePlayer();
-  const inputRef = useRef<TextInput>(null);
-  const [dailyGoal, setDailyGoal] = useState(5);
-  const [playlistPickerOpen, setPlaylistPickerOpen] = useState(false);
-  const [pickerEntry, setPickerEntry] = useState<GratitudeEntry | null>(null);
-  const [playlists, setPlaylists] = useState<Playlist[]>([]);
-
-  const refreshEntries = useCallback(async () => {
-    setRefreshing(true);
-    const [loadedEntries, preferences] = await Promise.all([loadGratitudeEntries(), loadPreferences()]);
-    setEntries(preferences.entrySort === "oldest" ? [...loadedEntries].reverse() : loadedEntries);
-    setRefreshing(false);
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      refreshEntries();
-    }, [refreshEntries]),
-  );
-
-  useFocusEffect(useCallback(() => { loadDailyGoal().then(setDailyGoal); }, []));
-
-
-  const addEntry = useCallback(async () => {
-    const text = draft.trim();
-    if (!text || isSaving) return;
-
-    setIsSaving(true);
-    const nextEntry: GratitudeEntry = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      text,
-      createdAt: new Date().toISOString(),
-    };
-    const nextEntries = [nextEntry, ...entries];
-    setEntries(nextEntries);
-    setDraft("");
-    inputRef.current?.focus();
-    try {
-      await saveGratitudeEntries(nextEntries);
-      if (Platform.OS !== "web") {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-    } finally {
-      setIsSaving(false);
-    }
-  }, [draft, entries, isSaving]);
-
-  const openPlaylistPicker = async (entry: GratitudeEntry) => { setPlaylists(await ensureDefaultPlaylist()); setPickerEntry(entry); setPlaylistPickerOpen(true); };
-  const addToPlaylist = async (playlist: Playlist) => { if (!pickerEntry) return; const nextEntries = entries.map((entry) => entry.id === pickerEntry.id ? { ...entry, favorite: true } : entry); const nextLists = playlists.map((item) => item.id === playlist.id ? { ...item, entryIds: item.entryIds.includes(pickerEntry.id) ? item.entryIds : [...item.entryIds, pickerEntry.id] } : item); setEntries(nextEntries); setPlaylists(nextLists); await saveGratitudeEntries(nextEntries); await savePlaylists(nextLists); setPlaylistPickerOpen(false); };
-  const createPlaylistForEntry = async (name: string) => { if (!pickerEntry) return; const created = { id: `playlist-${Date.now()}`, name, entryIds: [pickerEntry.id], createdAt: new Date().toISOString() }; const nextEntries = entries.map((entry) => entry.id === pickerEntry.id ? { ...entry, favorite: true } : entry); const nextLists = [...playlists, created]; setEntries(nextEntries); setPlaylists(nextLists); await saveGratitudeEntries(nextEntries); await savePlaylists(nextLists); setPlaylistPickerOpen(false); };
-
-  const todayEntries = entries.filter((entry) => {
-    const now = new Date();
-    const date = new Date(entry.createdAt);
-    return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
-  });
-
-  return (
-    <ScreenContainer containerClassName="bg-[#F8F6F0]" safeAreaClassName="bg-[#F8F6F0]">
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.flex}>
-        <FlatList
-          data={todayEntries}
-          keyExtractor={(item) => item.id}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshEntries} tintColor={colors.primary} />}
-          contentContainerStyle={styles.listContent}
-          ListHeaderComponent={
-            <View>
-              <View style={styles.header}>
-                <View>
-                  <View style={styles.brandRow}>
-                    <View style={styles.brandMark}>
-                      <Ionicons name="leaf" size={14} color="#FFFFFF" />
-                    </View>
-                    <Text style={styles.brandText}>ŞÜKÜR GÜNLÜĞÜ</Text>
-                  </View>
-                </View>
-                <View style={styles.topActions}>
-                  <Pressable onPress={() => setQuickVisible(true)} style={({ pressed }) => [styles.roundButton, styles.roundButtonFilled, pressed && styles.pressed]} accessibilityLabel="Hızlı şükran yaz"><Ionicons name="flash-outline" size={18} color="#FFFFFF" /></Pressable>
-                  <Pressable onPress={() => router.push("/settings")} style={({ pressed }) => [styles.roundButton, pressed && styles.pressed]} accessibilityLabel="Ayarlar"><Ionicons name="settings-outline" size={18} color={colors.primary} /></Pressable>
-                </View>
-              </View>
-
-              <PlaylistPicker visible={playlistPickerOpen} playlists={playlists} onClose={() => setPlaylistPickerOpen(false)} onSelect={addToPlaylist} onCreate={createPlaylistForEntry} />
-              <QuickGratitudeModal visible={quickVisible} onClose={() => setQuickVisible(false)} onSave={async (text) => {
-                const nextEntry: GratitudeEntry = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, text, createdAt: new Date().toISOString() };
-                const nextEntries = [nextEntry, ...entries];
-                setEntries(nextEntries);
-                await saveGratitudeEntries(nextEntries);
-              }} />
-
-              <View style={styles.composerCard}>
-                <View style={styles.composerTop}>
-                  <Text style={styles.composerTitle}>Bugün şükrettiğim şey...</Text>
-                </View>
-                <TextInput
-                  value={draft}
-                  onChangeText={setDraft}
-                  multiline
-                  ref={inputRef}
-                  maxLength={1001}
-                  placeholder="Bugün şükrettiğim şey..."
-                  placeholderTextColor="#A9B1AB"
-                  style={styles.input}
-                  textAlignVertical="top"
-                  blurOnSubmit={false}
-                  returnKeyType="done"
-                />
-                <View style={styles.composerFooter}>
-                  <Text style={styles.characterCount}>{draft.length}/1001</Text>
-                  <Pressable
-                    onPress={addEntry}
-                    accessibilityRole="button"
-                    accessibilityLabel="Şükür maddesi ekle"
-                    style={({ pressed }) => [styles.addButton, pressed && styles.pressed, (!draft.trim() || isSaving) && styles.addButtonDisabled]}
-                  >
-                    <Text style={styles.addButtonText}>{isSaving ? "Ekleniyor" : "Ekle"}</Text>
-                    <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
-                  </Pressable>
-                </View>
-              </View>
-
-              <View style={styles.goalCard}><View style={styles.goalHeader}><View style={styles.goalIcon}><Ionicons name={todayEntries.length >= dailyGoal ? "checkmark-circle-outline" : "locate-outline"} size={19} color={colors.primary} /></View><View style={styles.goalCopy}><Text style={styles.goalTitle}>Bugünün hedefi</Text><Text style={styles.goalText}>{todayEntries.length >= dailyGoal ? `Hedefini tamamladın. ${todayEntries.length} şükran kaydettin; istersen devam edebilirsin.` : `${dailyGoal - todayEntries.length} şükran daha eklediğinde hedefin tamamlanacak.`}</Text></View></View><View style={styles.goalTrack}><View style={[styles.goalFill, { width: `${Math.min(100, (getGoalProgress(todayEntries.length, dailyGoal)) * 100)}%` }]} />{todayEntries.length > dailyGoal ? <View style={[styles.goalOverflow, { width: `${((todayEntries.length - dailyGoal) / todayEntries.length) * 100}%` }]} /> : null}{todayEntries.length > dailyGoal ? <View style={[styles.goalMarker, { left: `${(dailyGoal / todayEntries.length) * 100}%` }]} /> : null}</View><Text style={styles.goalStatus}>{todayEntries.length > dailyGoal ? `Hedefinin %${Math.round((todayEntries.length / dailyGoal - 1) * 100)} üzerindesin` : todayEntries.length === dailyGoal ? "Hedef tamamlandı" : `${todayEntries.length}/${dailyGoal} şükran`}</Text></View>
-
-              <View style={styles.listHeader}>
-                <View>
-                  <Text style={styles.sectionTitle}>Şükürlerin</Text>
-                </View>
-                <View style={styles.listHeaderActions}>
-                  <Pressable onPress={() => playEntries(todayEntries)} disabled={todayEntries.length === 0} style={({ pressed }) => [styles.listenTodayButton, pressed && styles.pressed, todayEntries.length === 0 && styles.listenTodayDisabled]} accessibilityLabel="Bugünün şükürlerini dinle">
-                    <Ionicons name="volume-high-outline" size={15} color={colors.primary} />
-                    <Text style={styles.listenTodayText}>Dinle</Text>
-                  </Pressable>
-                  <View style={styles.totalPill}><Text style={styles.totalPillText}>{todayEntries.length}</Text></View>
-                </View>
-              </View>
-            </View>
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <View style={styles.emptyIcon}>
-                <Ionicons name="leaf-outline" size={26} color={colors.primary} />
-              </View>
-              <Text style={styles.emptyTitle}>Sayfan henüz boş</Text>
-              <Text style={styles.emptyText}>Aklına gelen güzel bir şeyi yukarıya yaz. Her madde, kendine verdiğin küçük bir hediye.</Text>
-            </View>
-          }
-          renderItem={({ item, index }) => (
-            <View style={styles.entryCard}>
-              <View style={[styles.entryNumber, index === 0 && styles.entryNumberHighlight]}>
-                <Text style={[styles.entryNumberText, index === 0 && styles.entryNumberTextHighlight]}>{String(todayEntries.length - index).padStart(2, "0")}</Text>
-              </View>
-              <View style={styles.entryCopy}>
-                <Text style={styles.entryText}>{item.text}</Text>
-                <View style={styles.entryMeta}>
-                  <Ionicons name="time-outline" size={12} color={colors.muted} />
-                  <Text style={styles.entryMetaText}>{formatEntryDate(new Date(item.createdAt))} · {formatEntryTime(new Date(item.createdAt))}</Text>
-                </View>
-              </View>
-              <Pressable onPress={() => openPlaylistPicker(item)} accessibilityLabel="Playlist’e ekle"><Ionicons name={item.favorite ? "star" : "star-outline"} size={20} color={item.favorite ? colors.orange : colors.muted} /></Pressable>
-            </View>
-          )}
-        />
-      </KeyboardAvoidingView>
-    </ScreenContainer>
-  );
-}
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  listContent: { paddingHorizontal: 22, paddingBottom: 30 },
-  header: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingTop: 18,
-  },
-  brandRow: { alignItems: "center", flexDirection: "row", marginBottom: 15 },
-  brandMark: {
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: 9,
-    height: 25,
-    justifyContent: "center",
-    marginRight: 8,
-    width: 25,
-  },
-  brandText: { color: colors.primary, fontSize: 14, fontWeight: "800", letterSpacing: 1.5 },
-  headerDot: { backgroundColor: colors.orange, borderRadius: 4, height: 8, marginTop: 12, width: 8 },
-  topActions: { alignItems: "center", flexDirection: "row", gap: 8, marginTop: 7 },
-  roundButton: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 21, borderWidth: 1, height: 42, justifyContent: "center", width: 42 },
-  roundButtonFilled: { backgroundColor: colors.primary, borderColor: colors.primary },
-  title: { color: colors.ink, fontSize: 30, fontWeight: "800", letterSpacing: -0.8, lineHeight: 35 },
-  todayCard: {
-    alignItems: "center",
-    backgroundColor: colors.primarySoft,
-    borderRadius: 20,
-    flexDirection: "row",
-    marginTop: 24,
-    padding: 15,
-  },
-  todayIcon: { alignItems: "center", backgroundColor: "#FCE3D1", borderRadius: 15, height: 38, justifyContent: "center", width: 38 },
-  todayCopy: { flex: 1, marginLeft: 12 },
-  todayLabel: { color: colors.primary, fontSize: 10, fontWeight: "800", letterSpacing: 1.1 },
-  todayCount: { color: colors.ink, fontSize: 22, fontWeight: "800", marginTop: 2 },
-  todayUnit: { color: colors.muted, fontSize: 13, fontWeight: "600" },
-  todayLeaf: { alignItems: "center", backgroundColor: "#CDE7D8", borderRadius: 17, height: 34, justifyContent: "center", width: 34 },
-  listenTodayButton: { alignItems: "center", alignSelf: "flex-start", backgroundColor: "#EEF5F0", borderRadius: 12, flexDirection: "row", gap: 7, marginTop: 9, paddingHorizontal: 11, paddingVertical: 8 },
-  listenTodayDisabled: { opacity: 0.45 },
-  listenTodayText: { color: colors.primary, fontSize: 11, fontWeight: "800" },
-  listHeaderActions: { alignItems: "center", flexDirection: "row", gap: 7 },
-  inspirationCard: { alignItems: "center", backgroundColor: "#FFF4E8", borderRadius: 15, flexDirection: "row", marginBottom: 12, padding: 12 }, inspirationText: { color: colors.ink, flex: 1, fontSize: 12, fontWeight: "600", marginLeft: 8 },
-  composerCard: {
-    minHeight: 230,
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: 22,
-    borderWidth: 1,
-    marginTop: 15,
-    padding: 16,
-  },
-  composerTop: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
-  composerTitle: { color: colors.ink, fontSize: 20, fontWeight: "800" },
-  input: { color: colors.ink, fontSize: 16, lineHeight: 24, minHeight: 135, paddingTop: 15 },
-  composerFooter: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
-  characterCount: { color: colors.muted, fontSize: 11 },
-  addButton: { alignItems: "center", backgroundColor: colors.primaryDark, borderRadius: 13, flexDirection: "row", gap: 8, paddingHorizontal: 15, paddingVertical: 10 },
-  addButtonDisabled: { opacity: 0.5 },
-  addButtonText: { color: "#FFFFFF", fontSize: 13, fontWeight: "800" },
-  goalCard: { backgroundColor: "#EAF3ED", borderColor: "#D5E8DA", borderRadius: 20, borderWidth: 1, marginTop: 14, padding: 15 }, goalHeader: { alignItems: "center", flexDirection: "row" }, goalIcon: { alignItems: "center", backgroundColor: "#D2E9D9", borderRadius: 15, height: 32, justifyContent: "center", width: 32 }, goalCopy: { flex: 1, marginLeft: 10 }, goalTitle: { color: colors.ink, fontSize: 13, fontWeight: "800" }, goalText: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 3 }, goalTrack: { backgroundColor: "#CFE3D4", borderRadius: 4, height: 8, marginTop: 16, overflow: "visible", position: "relative" }, goalFill: { backgroundColor: colors.primary, borderRadius: 4, height: 8 }, goalOverflow: { backgroundColor: colors.primaryDark, borderRadius: 3, height: 7, position: "absolute", right: 0 }, goalMarker: { backgroundColor: colors.ink, height: 18, position: "absolute", top: -5, width: 2 }, goalStatus: { color: colors.primary, fontSize: 11, fontWeight: "800", marginTop: 10, textAlign: "right" },
-  pressed: { opacity: 0.76, transform: [{ scale: 0.98 }] },
-  listHeader: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: 12, marginTop: 28 },
-  sectionTitle: { color: colors.ink, fontSize: 18, fontWeight: "800" },
-  sectionSubtitle: { color: colors.muted, fontSize: 12, marginTop: 3 },
-  totalPill: { alignItems: "center", backgroundColor: colors.orange, borderRadius: 13, height: 28, justifyContent: "center", minWidth: 28, paddingHorizontal: 8 },
-  totalPillText: { color: "#FFFFFF", fontSize: 12, fontWeight: "800" },
-  entryCard: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 18, borderWidth: 1, flexDirection: "row", marginBottom: 10, padding: 14 },
-  entryNumber: { alignItems: "center", backgroundColor: "#F1F3EF", borderRadius: 12, height: 36, justifyContent: "center", marginRight: 12, width: 36 },
-  entryNumberHighlight: { backgroundColor: colors.primarySoft },
-  entryNumberText: { color: colors.muted, fontSize: 11, fontWeight: "800" },
-  entryNumberTextHighlight: { color: colors.primary },
-  entryCopy: { flex: 1, marginRight: 10 },
-  entryText: { color: colors.ink, fontSize: 14, fontWeight: "600", lineHeight: 20 },
-  entryMeta: { alignItems: "center", flexDirection: "row", gap: 4, marginTop: 7 },
-  entryMetaText: { color: colors.muted, fontSize: 10 },
-  emptyState: { alignItems: "center", backgroundColor: "#F1EDE2", borderRadius: 20, paddingHorizontal: 24, paddingVertical: 27 },
-  emptyIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: 19, height: 48, justifyContent: "center", marginBottom: 11, width: 48 },
-  emptyTitle: { color: colors.ink, fontSize: 15, fontWeight: "800" },
-  emptyText: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: 6, textAlign: "center" },
-});
+const styles = StyleSheet.create({ flex:{flex:1},content:{padding:20,paddingBottom:34},topline:{alignItems:"center",flexDirection:"row",justifyContent:"space-between",marginTop:5},brand:{alignItems:"center",flexDirection:"row",gap:8},brandText:{color:ritual.green,fontFamily:ritualFonts.bodyBold,fontSize:10,letterSpacing:1.6},settings:{alignItems:"center",borderColor:ritual.line,borderWidth:1,height:36,justifyContent:"center",width:36},dateLine:{alignItems:"baseline",borderBottomColor:ritual.line,borderBottomWidth:1,flexDirection:"row",justifyContent:"space-between",marginTop:17,paddingBottom:10},date:{color:ritual.green,fontFamily:ritualFonts.bodyBold,fontSize:9,letterSpacing:1.25},clock:{color:ritual.muted,fontFamily:ritualFonts.body,fontSize:10},ritualLine:{flexDirection:"row",justifyContent:"space-between",marginTop:14},ritual:{color:ritual.gold,fontFamily:ritualFonts.bodyBold,fontSize:9,letterSpacing:1.35},ritualPrompt:{color:ritual.muted,fontFamily:ritualFonts.body,fontSize:10},page:{backgroundColor:ritual.ivory,elevation:3,marginHorizontal:-5,marginTop:11,minHeight:377,padding:21,shadowColor:"#5B482E",shadowOpacity:.14,shadowRadius:15},goldRule:{backgroundColor:ritual.gold,height:2,left:28,position:"absolute",right:28,top:0},pageHead:{flexDirection:"row",justifyContent:"space-between"},questionLabel:{color:"#92744D",fontFamily:ritualFonts.bodyBold,fontSize:9,letterSpacing:1.25},quick:{color:ritual.green,fontFamily:ritualFonts.bodyBold,fontSize:9,letterSpacing:.7},question:{color:ritual.ink,fontFamily:ritualFonts.display,fontSize:21,letterSpacing:-.45,lineHeight:28,marginTop:15},editor:{color:ritual.ink,flex:1,fontFamily:ritualFonts.displayItalic,fontSize:23,letterSpacing:-.35,lineHeight:33,marginTop:17,minHeight:190,padding:0},pageFoot:{alignItems:"center",borderTopColor:ritual.line,borderTopWidth:1,flexDirection:"row",justifyContent:"space-between",paddingTop:11},tools:{flexDirection:"row",gap:16},tool:{color:ritual.green,fontFamily:ritualFonts.display,fontSize:15},count:{color:"#968C7A",fontFamily:ritualFonts.body,fontSize:9},actions:{flexDirection:"row",gap:9,marginTop:12},keepWriting:{alignItems:"center",borderColor:ritual.line,borderWidth:1,flex:1,flexDirection:"row",gap:6,justifyContent:"center",minHeight:47},keepWritingText:{color:ritual.green,fontFamily:ritualFonts.bodyBold,fontSize:9,letterSpacing:.7},save:{alignItems:"center",backgroundColor:ritual.green,flex:1.05,flexDirection:"row",gap:7,justifyContent:"center",minHeight:47},saveText:{color:ritual.ivory,fontFamily:ritualFonts.bodyBold,fontSize:9,letterSpacing:.8},disabled:{opacity:.42},rhythm:{alignItems:"center",borderBottomColor:ritual.line,borderBottomWidth:1,flexDirection:"row",paddingVertical:20},ring:{alignItems:"center",borderColor:ritual.green,borderRadius:22,borderWidth:3,height:43,justifyContent:"center",width:43},ringText:{color:ritual.green,fontFamily:ritualFonts.bodyBold,fontSize:9},rhythmCopy:{flex:1,marginLeft:11},rhythmTitle:{color:ritual.ink,fontFamily:ritualFonts.bodyBold,fontSize:12},rhythmText:{color:ritual.muted,fontFamily:ritualFonts.body,fontSize:10,lineHeight:15,marginTop:3},progress:{backgroundColor:ritual.paperDeep,height:4,overflow:"hidden",width:47},progressFill:{backgroundColor:ritual.gold,height:4},sectionHead:{alignItems:"flex-end",flexDirection:"row",justifyContent:"space-between",marginTop:21},sectionTitle:{color:ritual.ink,fontFamily:ritualFonts.display,fontSize:20},sectionCaption:{color:ritual.muted,fontFamily:ritualFonts.body,fontSize:10,marginTop:3},listen:{alignItems:"center",flexDirection:"row",gap:5,padding:7},listenText:{color:ritual.green,fontFamily:ritualFonts.bodyBold,fontSize:9,letterSpacing:.8},empty:{alignItems:"center",borderColor:ritual.line,borderStyle:"dashed",borderWidth:1,flexDirection:"row",gap:9,marginTop:13,padding:18},emptyMark:{color:ritual.gold,fontSize:17},emptyText:{color:ritual.muted,fontFamily:ritualFonts.displayItalic,fontSize:15},entry:{alignItems:"flex-start",borderBottomColor:ritual.line,borderBottomWidth:1,flexDirection:"row",paddingVertical:15},entryNo:{color:ritual.gold,fontFamily:ritualFonts.bodyBold,fontSize:9,letterSpacing:1,marginTop:4,width:31},entryCopy:{flex:1,paddingRight:10},entryText:{color:ritual.ink,fontFamily:ritualFonts.bodyMedium,fontSize:13,lineHeight:20},entryMeta:{color:ritual.muted,fontFamily:ritualFonts.body,fontSize:9,marginTop:6} });
