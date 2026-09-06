@@ -1,8 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import * as Speech from "expo-speech";
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from "expo-audio";
-import * as Notifications from "expo-notifications";
-import { Platform } from "react-native";
 
 import { DEFAULT_LISTENING_SETTINGS, loadListeningSettings, type ListeningSettings } from "@/lib/listening-settings";
 import type { GratitudeEntry } from "@/lib/gratitude";
@@ -37,13 +35,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const gapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playbackTokenRef = useRef(0);
   const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const notificationIdRef = useRef<string | null>(null);
-  const notificationGenerationRef = useRef(0);
 
   useEffect(() => {
     loadListeningSettings().then((loaded) => { setSettingsState(loaded); settingsRef.current = loaded; });
     setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true }).catch(() => undefined);
-    return () => { Speech.stop(); if (gapTimerRef.current) clearTimeout(gapTimerRef.current); ambienceRef.current?.remove(); if (notificationIdRef.current && Platform.OS !== "web") Notifications.dismissNotificationAsync(notificationIdRef.current).catch(() => undefined); };
+    return () => { Speech.stop(); if (gapTimerRef.current) clearTimeout(gapTimerRef.current); ambienceRef.current?.remove(); };
   }, []);
 
   useEffect(() => { entriesRef.current = entries; }, [entries]);
@@ -64,15 +60,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const stopAmbience = useCallback(() => { if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current); fadeTimerRef.current = null; if (!ambienceRef.current) return; ambienceRef.current.pause(); ambienceRef.current.seekTo(0); ambienceRef.current.volume = 0; }, []);
 
-  const updatePlaybackNotification = useCallback(async (item: GratitudeEntry) => {
-    if (Platform.OS === "web") return;
-    const generation = ++notificationGenerationRef.current;
-    await Notifications.dismissAllNotificationsAsync().catch(() => undefined);
-    if (generation !== notificationGenerationRef.current) return;
-    notificationIdRef.current = await Notifications.scheduleNotificationAsync({ content: { title: "Şükran dinleniyor", body: item.text, sticky: true, autoDismiss: false, sound: false, color: "#2F7D5A", data: { screen: "player", gratitudeId: item.id } }, trigger: null }).catch(() => null);
-  }, []);
+  const updatePlaybackNotification = useCallback(async (_item: GratitudeEntry) => { return; }, []);
 
-  const clearPlaybackNotification = useCallback(() => { notificationGenerationRef.current += 1; if (Platform.OS !== "web") Notifications.dismissAllNotificationsAsync().catch(() => undefined); notificationIdRef.current = null; }, []);
+  const clearPlaybackNotification = useCallback(() => undefined, []);
 
   const ensureAmbience = useCallback(() => {
     const uri = settingsRef.current.ambienceUri; if (!uri) return null;
