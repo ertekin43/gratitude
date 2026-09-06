@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ScreenContainer } from "@/components/screen-container";
 import { AppTopActions } from "@/components/app-top-actions";
 import { ensureDefaultPlaylist, savePlaylists, type Playlist } from "@/lib/playlists";
+import { ritual } from "@/lib/design-system";
 
 export default function FavoritesScreen() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]); const [createOpen, setCreateOpen] = useState(false); const [name, setName] = useState(""); const router = useRouter();

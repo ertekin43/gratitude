@@ -2,7 +2,7 @@ import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { HapticTab } from "@/components/haptic-tab";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Ionicons } from "@expo/vector-icons";
 import { Platform } from "react-native";
 import { ritual } from "@/lib/design-system";
 
@@ -33,28 +33,28 @@ export default function TabLayout() {
         name="history"
         options={{
           title: "Geçmiş",
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="book.closed.fill" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons size={23} name="book-outline" color={color} />,
         }}
       />
       <Tabs.Screen
         name="index"
         options={{
           title: "Yaz",
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="plus" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons size={23} name="create-outline" color={color} />,
         }}
       />
       <Tabs.Screen
         name="favorites"
         options={{
           title: "Hatırla",
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="heart.fill" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons size={23} name="heart-outline" color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Sen",
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="person.fill" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons size={23} name="person-outline" color={color} />,
         }}
       />
     </Tabs>

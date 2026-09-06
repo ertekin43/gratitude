@@ -5,8 +5,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { ScreenContainer } from "@/components/screen-container";
 import { localDateKey, loadGratitudeEntries, saveGratitudeEntries, type GratitudeEntry } from "@/lib/gratitude";
 import { usePlayer } from "@/lib/player-context";
+import { ritual } from "@/lib/design-system";
 
-const colors = { background: "#F8F6F0", surface: "#FFFFFF", ink: "#163B2B", muted: "#7B8A82", border: "#E6E8E2", primary: "#2F7D5A", soft: "#E1F0E8", orange: "#E9905E", danger: "#C75C51" };
+const colors = { background: ritual.paper, surface: ritual.ivory, ink: ritual.ink, muted: ritual.muted, border: ritual.line, primary: ritual.green, soft: ritual.greenSoft, orange: ritual.gold, danger: "#C75C51" };
 export default function HistoryDetailScreen() {
   const router = useRouter(); const { date } = useLocalSearchParams<{ date: string }>(); const { playEntries } = usePlayer(); const [allEntries, setAllEntries] = useState<GratitudeEntry[]>([]); const [editing, setEditing] = useState<GratitudeEntry | null>(null); const [editText, setEditText] = useState("");
   const entries = useMemo(() => allEntries.filter((entry) => localDateKey(new Date(entry.createdAt)) === date), [allEntries, date]);

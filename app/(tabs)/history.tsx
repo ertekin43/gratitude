@@ -7,8 +7,9 @@ import { ScreenContainer } from "@/components/screen-container";
 import { localDateKey, loadGratitudeEntries, pickRandomEntries, type GratitudeEntry } from "@/lib/gratitude";
 import { usePlayer } from "@/lib/player-context";
 import { AppTopActions } from "@/components/app-top-actions";
+import { ritual } from "@/lib/design-system";
 
-const colors = { surface: "#FFFFFF", ink: "#163B2B", muted: "#7B8A82", border: "#E6E8E2", primary: "#2F7D5A", primarySoft: "#E1F0E8", orange: "#E9905E", orangeSoft: "#FFF0E6" };
+const colors = { surface: ritual.ivory, ink: ritual.ink, muted: ritual.muted, border: ritual.line, primary: ritual.green, primarySoft: ritual.greenSoft, orange: ritual.gold, orangeSoft: ritual.goldSoft };
 
 type DayGroup = { key: string; date: Date; entries: GratitudeEntry[] };
 function formatDay(date: Date) { return date.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" }).replace(/^./, (value) => value.toUpperCase()); }

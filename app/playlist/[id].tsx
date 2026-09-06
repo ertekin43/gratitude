@@ -6,6 +6,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { loadGratitudeEntries, saveGratitudeEntries, type GratitudeEntry } from "@/lib/gratitude";
 import { entriesForPlaylist, isDefaultPlaylist, loadPlaylists, savePlaylists, type Playlist } from "@/lib/playlists";
 import { usePlayer } from "@/lib/player-context";
+import { ritual } from "@/lib/design-system";
 
 export default function PlaylistDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
