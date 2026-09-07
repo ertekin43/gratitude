@@ -132,6 +132,8 @@ export default function HomeScreen() {
                 await saveGratitudeEntries(nextEntries);
               }} />
 
+              <View style={styles.goalCard}><View style={styles.goalHeader}><View style={styles.goalIcon}><Ionicons name={todayEntries.length >= dailyGoal ? "checkmark-circle-outline" : "locate-outline"} size={19} color={colors.primary} /></View><View style={styles.goalCopy}><Text style={styles.goalTitle}>Bugünün hedefi</Text><Text style={styles.goalText}>{todayEntries.length >= dailyGoal ? `Hedefini tamamladın. ${todayEntries.length} şükran kaydettin; istersen devam edebilirsin.` : `${dailyGoal - todayEntries.length} şükran daha eklediğinde hedefin tamamlanacak.`}</Text></View></View><View style={styles.goalTrack}><View style={[styles.goalFill, { width: `${Math.min(100, (getGoalProgress(todayEntries.length, dailyGoal)) * 100)}%` }]} />{todayEntries.length > dailyGoal ? <View style={[styles.goalOverflow, { width: `${((todayEntries.length - dailyGoal) / todayEntries.length) * 100}%` }]} /> : null}{todayEntries.length > dailyGoal ? <View style={[styles.goalMarker, { left: `${(dailyGoal / todayEntries.length) * 100}%` }]} /> : null}</View><Text style={styles.goalStatus}>{todayEntries.length > dailyGoal ? `Hedefinin %${Math.round((todayEntries.length / dailyGoal - 1) * 100)} üzerindesin` : todayEntries.length === dailyGoal ? "Hedef tamamlandı" : `${todayEntries.length}/${dailyGoal} şükran`}</Text></View>
+
               <View style={styles.composerCard}>
                 <TextInput
                   value={draft}
@@ -158,7 +160,7 @@ export default function HomeScreen() {
                 </View>
               </View>
 
-              <View style={styles.goalCard}><View style={styles.goalHeader}><View style={styles.goalIcon}><Ionicons name={todayEntries.length >= dailyGoal ? "checkmark-circle-outline" : "locate-outline"} size={19} color={colors.primary} /></View><View style={styles.goalCopy}><Text style={styles.goalTitle}>Bugünün hedefi</Text><Text style={styles.goalText}>{todayEntries.length >= dailyGoal ? `Hedefini tamamladın. ${todayEntries.length} şükran kaydettin; istersen devam edebilirsin.` : `${dailyGoal - todayEntries.length} şükran daha eklediğinde hedefin tamamlanacak.`}</Text></View></View><View style={styles.goalTrack}><View style={[styles.goalFill, { width: `${Math.min(100, (getGoalProgress(todayEntries.length, dailyGoal)) * 100)}%` }]} />{todayEntries.length > dailyGoal ? <View style={[styles.goalOverflow, { width: `${((todayEntries.length - dailyGoal) / todayEntries.length) * 100}%` }]} /> : null}{todayEntries.length > dailyGoal ? <View style={[styles.goalMarker, { left: `${(dailyGoal / todayEntries.length) * 100}%` }]} /> : null}</View><Text style={styles.goalStatus}>{todayEntries.length > dailyGoal ? `Hedefinin %${Math.round((todayEntries.length / dailyGoal - 1) * 100)} üzerindesin` : todayEntries.length === dailyGoal ? "Hedef tamamlandı" : `${todayEntries.length}/${dailyGoal} şükran`}</Text></View>
+
 
               <View style={styles.listHeader}>
                 <View>
@@ -208,7 +210,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   listContent: { paddingHorizontal: 22, paddingBottom: 30 },
   header: {
-    alignItems: "flex-start",
+    alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
     paddingTop: 18,
@@ -225,7 +227,7 @@ const styles = StyleSheet.create({
   },
   brandText: { color: colors.primary, fontSize: 14, fontWeight: "800", letterSpacing: 1.5 },
   headerDot: { backgroundColor: colors.orange, borderRadius: 4, height: 8, marginTop: 12, width: 8 },
-  topActions: { alignItems: "center", flexDirection: "row", gap: 8, marginTop: 7 },
+  topActions: { alignItems: "center", flexDirection: "row", gap: 8, marginTop: 0 },
   roundButton: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 21, borderWidth: 1, height: 42, justifyContent: "center", width: 42 },
   roundButtonFilled: { backgroundColor: colors.primary, borderColor: colors.primary },
   title: { color: colors.ink, fontSize: 30, fontWeight: "800", letterSpacing: -0.8, lineHeight: 35 },
@@ -260,8 +262,7 @@ const styles = StyleSheet.create({
   composerTop: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
   composerTitle: { color: colors.ink, fontSize: 20, fontWeight: "800" },
   input: { color: colors.ink, fontFamily: "PlayfairDisplay", fontSize: 16, lineHeight: 24, minHeight: 135, paddingTop: 15 },
-  composerFooter: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
-  characterCount: { color: colors.muted, fontSize: 11 },
+  composerFooter: { alignItems: "center", flexDirection: "row", justifyContent: "flex-end", marginTop: 4 },
   addButton: { alignItems: "center", backgroundColor: colors.primaryDark, borderRadius: 13, flexDirection: "row", gap: 8, paddingHorizontal: 15, paddingVertical: 10 },
   addButtonDisabled: { opacity: 0.5 },
   addButtonText: { color: "#FFFFFF", fontSize: 13, fontWeight: "800" },
@@ -272,13 +273,13 @@ const styles = StyleSheet.create({
   sectionSubtitle: { color: colors.muted, fontSize: 12, marginTop: 3 },
   totalPill: { alignItems: "center", backgroundColor: colors.orange, borderRadius: 13, height: 28, justifyContent: "center", minWidth: 28, paddingHorizontal: 8 },
   totalPillText: { color: "#FFFFFF", fontSize: 12, fontWeight: "800" },
-  entryCard: { alignItems: "flex-start", backgroundColor: "transparent", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", marginBottom: 0, paddingVertical: 20 },
+  entryCard: { alignItems: "flex-start", backgroundColor: colors.surface, borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", marginBottom: 0, paddingVertical: 20 },
   entryNumber: { alignItems: "center", justifyContent: "flex-start", marginRight: 14, paddingTop: 3, width: 28 },
   entryNumberHighlight: { backgroundColor: colors.primarySoft },
   entryNumberText: { color: colors.muted, fontSize: 11, fontWeight: "800" },
   entryNumberTextHighlight: { color: colors.primary },
   entryCopy: { flex: 1, marginRight: 10 },
-  entryText: { color: colors.ink, fontFamily: "OpenSans", fontSize: 17, fontWeight: "400", lineHeight: 27 },
+  entryText: { color: colors.ink, fontFamily: "OpenSans", fontSize: 15, fontWeight: "400", lineHeight: 27 },
   entryMeta: { alignItems: "center", flexDirection: "row", gap: 4, marginTop: 9 },
   entryMetaText: { color: colors.muted, fontFamily: "OpenSans", fontSize: 11 },
   emptyState: { alignItems: "center", backgroundColor: "#F1EDE2", borderRadius: 20, paddingHorizontal: 24, paddingVertical: 27 },
