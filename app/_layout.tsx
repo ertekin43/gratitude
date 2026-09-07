@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useFonts, PlayfairDisplay_400Regular, PlayfairDisplay_500Medium, PlayfairDisplay_500Medium_Italic, PlayfairDisplay_600SemiBold, PlayfairDisplay_700Bold } from "@expo-google-fonts/playfair-display";
+import { OpenSans_400Regular } from "@expo-google-fonts/open-sans";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
@@ -48,7 +49,7 @@ function PrivacyGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ PlayfairDisplay: PlayfairDisplay_400Regular, PlayfairDisplayMedium: PlayfairDisplay_500Medium, PlayfairDisplayMediumItalic: PlayfairDisplay_500Medium_Italic, PlayfairDisplaySemiBold: PlayfairDisplay_600SemiBold, PlayfairDisplayBold: PlayfairDisplay_700Bold });
+  const [fontsLoaded] = useFonts({ PlayfairDisplay: PlayfairDisplay_400Regular, PlayfairDisplayMedium: PlayfairDisplay_500Medium, PlayfairDisplayMediumItalic: PlayfairDisplay_500Medium_Italic, PlayfairDisplaySemiBold: PlayfairDisplay_600SemiBold, PlayfairDisplayBold: PlayfairDisplay_700Bold, OpenSans: OpenSans_400Regular });
   const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS;
   const initialFrame = initialWindowMetrics?.frame ?? DEFAULT_WEB_FRAME;
 
@@ -105,7 +106,7 @@ export default function RootLayout() {
   const TextWithDefaults = Text as typeof Text & { defaultProps?: { style?: unknown } };
   const InputWithDefaults = TextInput as typeof TextInput & { defaultProps?: { style?: unknown } };
   TextWithDefaults.defaultProps = { ...TextWithDefaults.defaultProps, style: [{ fontFamily: "PlayfairDisplay" }, TextWithDefaults.defaultProps?.style] };
-  InputWithDefaults.defaultProps = { ...InputWithDefaults.defaultProps, style: [{ fontFamily: "PlayfairDisplayMediumItalic" }, InputWithDefaults.defaultProps?.style] };
+  InputWithDefaults.defaultProps = { ...InputWithDefaults.defaultProps, style: [{ fontFamily: "PlayfairDisplay" }, InputWithDefaults.defaultProps?.style] };
 
   const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>

@@ -133,15 +133,11 @@ export default function HomeScreen() {
               }} />
 
               <View style={styles.composerCard}>
-                <View style={styles.composerTop}>
-                  <Text style={styles.composerTitle}>Bugün şükrettiğim şey...</Text>
-                </View>
                 <TextInput
                   value={draft}
                   onChangeText={setDraft}
                   multiline
                   ref={inputRef}
-                  maxLength={1001}
                   placeholder="Bugün şükrettiğim şey..."
                   placeholderTextColor="#A9B1AB"
                   style={styles.input}
@@ -150,7 +146,6 @@ export default function HomeScreen() {
                   returnKeyType="done"
                 />
                 <View style={styles.composerFooter}>
-                  <Text style={styles.characterCount}>{draft.length}/1001</Text>
                   <Pressable
                     onPress={addEntry}
                     accessibilityRole="button"
@@ -194,7 +189,7 @@ export default function HomeScreen() {
                 <Text style={[styles.entryNumberText, index === 0 && styles.entryNumberTextHighlight]}>{String(todayEntries.length - index).padStart(2, "0")}</Text>
               </View>
               <View style={styles.entryCopy}>
-                <Text style={styles.entryText}>{item.text}</Text>
+                  <Text style={styles.entryText}>{item.text}</Text>
                 <View style={styles.entryMeta}>
                   <Ionicons name="time-outline" size={12} color={colors.muted} />
                   <Text style={styles.entryMetaText}>{formatEntryDate(new Date(item.createdAt))} · {formatEntryTime(new Date(item.createdAt))}</Text>
@@ -264,7 +259,7 @@ const styles = StyleSheet.create({
   },
   composerTop: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
   composerTitle: { color: colors.ink, fontSize: 20, fontWeight: "800" },
-  input: { color: colors.ink, fontFamily: "PlayfairDisplayMediumItalic", fontSize: 16, lineHeight: 24, minHeight: 135, paddingTop: 15 },
+  input: { color: colors.ink, fontFamily: "PlayfairDisplay", fontSize: 16, lineHeight: 24, minHeight: 135, paddingTop: 15 },
   composerFooter: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
   characterCount: { color: colors.muted, fontSize: 11 },
   addButton: { alignItems: "center", backgroundColor: colors.primaryDark, borderRadius: 13, flexDirection: "row", gap: 8, paddingHorizontal: 15, paddingVertical: 10 },
@@ -277,15 +272,15 @@ const styles = StyleSheet.create({
   sectionSubtitle: { color: colors.muted, fontSize: 12, marginTop: 3 },
   totalPill: { alignItems: "center", backgroundColor: colors.orange, borderRadius: 13, height: 28, justifyContent: "center", minWidth: 28, paddingHorizontal: 8 },
   totalPillText: { color: "#FFFFFF", fontSize: 12, fontWeight: "800" },
-  entryCard: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 18, borderWidth: 1, flexDirection: "row", marginBottom: 10, padding: 14 },
-  entryNumber: { alignItems: "center", backgroundColor: "#F1F3EF", borderRadius: 12, height: 36, justifyContent: "center", marginRight: 12, width: 36 },
+  entryCard: { alignItems: "flex-start", backgroundColor: "transparent", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", marginBottom: 0, paddingVertical: 20 },
+  entryNumber: { alignItems: "center", justifyContent: "flex-start", marginRight: 14, paddingTop: 3, width: 28 },
   entryNumberHighlight: { backgroundColor: colors.primarySoft },
   entryNumberText: { color: colors.muted, fontSize: 11, fontWeight: "800" },
   entryNumberTextHighlight: { color: colors.primary },
   entryCopy: { flex: 1, marginRight: 10 },
-  entryText: { color: colors.ink, fontSize: 14, fontWeight: "600", lineHeight: 20 },
-  entryMeta: { alignItems: "center", flexDirection: "row", gap: 4, marginTop: 7 },
-  entryMetaText: { color: colors.muted, fontSize: 10 },
+  entryText: { color: colors.ink, fontFamily: "OpenSans", fontSize: 17, fontWeight: "400", lineHeight: 27 },
+  entryMeta: { alignItems: "center", flexDirection: "row", gap: 4, marginTop: 9 },
+  entryMetaText: { color: colors.muted, fontFamily: "OpenSans", fontSize: 11 },
   emptyState: { alignItems: "center", backgroundColor: "#F1EDE2", borderRadius: 20, paddingHorizontal: 24, paddingVertical: 27 },
   emptyIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: 19, height: 48, justifyContent: "center", marginBottom: 11, width: 48 },
   emptyTitle: { color: colors.ink, fontSize: 15, fontWeight: "800" },
