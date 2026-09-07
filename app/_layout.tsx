@@ -2,10 +2,11 @@ import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useFonts, PlayfairDisplay_400Regular, PlayfairDisplay_500Medium, PlayfairDisplay_500Medium_Italic, PlayfairDisplay_600SemiBold, PlayfairDisplay_700Bold } from "@expo-google-fonts/playfair-display";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
-import { Platform, Pressable, Text, View } from "react-native";
+import { Platform, Pressable, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as LocalAuthentication from "expo-local-authentication";
 import "@/lib/_core/nativewind-pressable";
@@ -47,6 +48,7 @@ function PrivacyGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({ PlayfairDisplay: PlayfairDisplay_400Regular, PlayfairDisplayMedium: PlayfairDisplay_500Medium, PlayfairDisplayMediumItalic: PlayfairDisplay_500Medium_Italic, PlayfairDisplaySemiBold: PlayfairDisplay_600SemiBold, PlayfairDisplayBold: PlayfairDisplay_700Bold });
   const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS;
   const initialFrame = initialWindowMetrics?.frame ?? DEFAULT_WEB_FRAME;
 
@@ -98,6 +100,12 @@ export default function RootLayout() {
       },
     };
   }, [initialInsets, initialFrame]);
+
+  if (!fontsLoaded) return null;
+  const TextWithDefaults = Text as typeof Text & { defaultProps?: { style?: unknown } };
+  const InputWithDefaults = TextInput as typeof TextInput & { defaultProps?: { style?: unknown } };
+  TextWithDefaults.defaultProps = { ...TextWithDefaults.defaultProps, style: [{ fontFamily: "PlayfairDisplay" }, TextWithDefaults.defaultProps?.style] };
+  InputWithDefaults.defaultProps = { ...InputWithDefaults.defaultProps, style: [{ fontFamily: "PlayfairDisplayMediumItalic" }, InputWithDefaults.defaultProps?.style] };
 
   const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>

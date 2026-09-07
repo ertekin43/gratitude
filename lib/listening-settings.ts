@@ -8,6 +8,7 @@ export type ListeningSettings = {
   ambienceUri: string | null;
   ambienceName: string | null;
   ambienceVolume: number;
+  backgroundPlayback: boolean;
 };
 
 export const DEFAULT_LISTENING_SETTINGS: ListeningSettings = {
@@ -16,6 +17,7 @@ export const DEFAULT_LISTENING_SETTINGS: ListeningSettings = {
   ambienceUri: null,
   ambienceName: null,
   ambienceVolume: 35,
+  backgroundPlayback: true,
 };
 
 export function normalizeListeningSettings(parsed: Partial<ListeningSettings>): ListeningSettings {
@@ -25,6 +27,7 @@ export function normalizeListeningSettings(parsed: Partial<ListeningSettings>): 
     ambienceUri: typeof parsed.ambienceUri === "string" ? parsed.ambienceUri : null,
     ambienceName: typeof parsed.ambienceName === "string" ? parsed.ambienceName : null,
     ambienceVolume: typeof parsed.ambienceVolume === "number" ? Math.min(100, Math.max(0, parsed.ambienceVolume)) : DEFAULT_LISTENING_SETTINGS.ambienceVolume,
+    backgroundPlayback: typeof parsed.backgroundPlayback === "boolean" ? parsed.backgroundPlayback : DEFAULT_LISTENING_SETTINGS.backgroundPlayback,
   };
 }
 

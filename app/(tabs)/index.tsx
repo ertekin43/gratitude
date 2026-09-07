@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   },
   composerTop: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
   composerTitle: { color: colors.ink, fontSize: 20, fontWeight: "800" },
-  input: { color: colors.ink, fontSize: 16, lineHeight: 24, minHeight: 135, paddingTop: 15 },
+  input: { color: colors.ink, fontFamily: "PlayfairDisplayMediumItalic", fontSize: 16, lineHeight: 24, minHeight: 135, paddingTop: 15 },
   composerFooter: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
   characterCount: { color: colors.muted, fontSize: 11 },
   addButton: { alignItems: "center", backgroundColor: colors.primaryDark, borderRadius: 13, flexDirection: "row", gap: 8, paddingHorizontal: 15, paddingVertical: 10 },

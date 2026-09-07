@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import * as Speech from "expo-speech";
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from "expo-audio";
+import { AppState } from "react-native";
 
 import { DEFAULT_LISTENING_SETTINGS, loadListeningSettings, type ListeningSettings } from "@/lib/listening-settings";
 import type { GratitudeEntry } from "@/lib/gratitude";
@@ -39,13 +40,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadListeningSettings().then((loaded) => { setSettingsState(loaded); settingsRef.current = loaded; });
     setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true }).catch(() => undefined);
-    return () => { Speech.stop(); if (gapTimerRef.current) clearTimeout(gapTimerRef.current); ambienceRef.current?.remove(); };
+    const subscription = AppState.addEventListener("change", (state) => { if (state === "background" && !settingsRef.current.backgroundPlayback) { Speech.stop(); setIsPlaying(false); stopAmbience(); } });
+    return () => { subscription.remove(); Speech.stop(); if (gapTimerRef.current) clearTimeout(gapTimerRef.current); ambienceRef.current?.remove(); };
   }, []);
 
   useEffect(() => { entriesRef.current = entries; }, [entries]);
 
   useEffect(() => {
     settingsRef.current = settings;
+    setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: settings.backgroundPlayback }).catch(() => undefined);
     if (ambienceUriRef.current !== settings.ambienceUri) { ambienceRef.current?.remove(); ambienceRef.current = null; ambienceUriRef.current = settings.ambienceUri; }
     if (ambienceRef.current) ambienceRef.current.volume = settings.ambienceVolume / 100;
   }, [settings]);
