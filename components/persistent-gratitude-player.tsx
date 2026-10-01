@@ -14,14 +14,13 @@ export function PersistentGratitudePlayer() {
   const offset = useRef(new Animated.ValueXY()).current;
   const start = useRef({ x: 0, y: 0 });
   const panResponder = useRef(PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 8 || Math.abs(gesture.dy) > 8,
+    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 8,
     onPanResponderGrant: () => { offset.stopAnimation((value) => { start.current = value; }); },
     onPanResponderMove: (_, gesture) => offset.setValue({ x: start.current.x + gesture.dx, y: start.current.y + gesture.dy }),
     onPanResponderRelease: (_, gesture) => {
       if (Math.abs(gesture.dx) > 130) { setHidden(true); return; }
-      const targetY = gesture.dy < -70 ? -Math.min(gesture.dy * 0.9 + 120, 560) : 0;
       const targetX = gesture.dx > 80 ? 110 : gesture.dx < -80 ? -110 : 0;
-      Animated.spring(offset, { toValue: { x: targetX, y: targetY }, useNativeDriver: true, bounciness: 5 }).start();
+      Animated.spring(offset, { toValue: { x: targetX, y: 0 }, useNativeDriver: true, bounciness: 5 }).start();
     },
   })).current;
   if (!entries.length || !isVisible || pathname === "/settings" || pathname === "/player") return null;

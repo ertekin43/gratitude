@@ -12,7 +12,7 @@ type PlayerContextValue = {
   isPlaying: boolean;
   isVisible: boolean;
   settings: ListeningSettings;
-  playEntries: (entries: GratitudeEntry[], startIndex?: number) => void;
+  playEntries: (entries: GratitudeEntry[], startIndex?: number, ambienceUri?: string | null) => void;
   toggle: () => void;
   next: () => void;
   previous: () => void;
@@ -36,6 +36,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const gapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playbackTokenRef = useRef(0);
   const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeAmbienceRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
     loadListeningSettings().then((loaded) => { setSettingsState(loaded); settingsRef.current = loaded; });
@@ -68,8 +69,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const clearPlaybackNotification = useCallback(() => undefined, []);
 
   const ensureAmbience = useCallback(() => {
-    const uri = settingsRef.current.ambienceUri; if (!uri) return null;
-    if (!ambienceRef.current) { ambienceRef.current = createAudioPlayer(uri); ambienceRef.current.loop = true; ambienceUriRef.current = uri; ambienceRef.current.volume = settingsRef.current.ambienceVolume / 100; }
+    const uri = activeAmbienceRef.current === undefined ? settingsRef.current.ambienceUri : activeAmbienceRef.current; if (!uri) return null;
+    if (ambienceUriRef.current !== uri) { ambienceRef.current?.remove(); ambienceRef.current = null; ambienceUriRef.current = uri; }
+    if (!ambienceRef.current) { ambienceRef.current = createAudioPlayer(uri); ambienceRef.current.loop = true; ambienceRef.current.volume = settingsRef.current.ambienceVolume / 100; }
     return ambienceRef.current;
   }, []);
 
@@ -77,7 +79,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const token = playbackTokenRef.current; const item = entriesRef.current[index];
     if (!item) { setIsPlaying(false); stopAmbience(); clearPlaybackNotification(); return; }
     setCurrentIndex(index); setIsPlaying(true); setIsVisible(true); updatePlaybackNotification(item);
-    const ambience = ensureAmbience(); if (ambience) { ambience.play(); fadeAmbience(settingsRef.current.ambienceVolume / 100); }
+    const ambience = ensureAmbience(); if (ambience) { ambience.play(); fadeAmbience(settingsRef.current.ambienceVolume / 100); } else { stopAmbience(); }
     Speech.speak(item.text, { language: "tr-TR", rate: settingsRef.current.rate, pitch: 1,
       onDone: () => { if (token !== playbackTokenRef.current) return; fadeAmbience(1); const advance = () => { if (token !== playbackTokenRef.current) return; if (index + 1 < entriesRef.current.length) { fadeAmbience(settingsRef.current.ambienceVolume / 100); speakAt(index + 1); } else { setIsPlaying(false); setCurrentIndex(0); stopAmbience(); clearPlaybackNotification(); } }; gapTimerRef.current = setTimeout(advance, settingsRef.current.gapSeconds * 1000); },
       onStopped: () => { /* Bilinçli geçişlerde Speech.stop() çağrılır; durum yeni speakAt tarafından belirlenir. */ },
@@ -85,7 +87,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     });
   }, [clearPlaybackNotification, ensureAmbience, fadeAmbience, stopAmbience, updatePlaybackNotification]);
 
-  const playEntries = useCallback((nextEntries: GratitudeEntry[], startIndex = 0) => { Speech.stop(); playbackTokenRef.current += 1; if (gapTimerRef.current) clearTimeout(gapTimerRef.current); setEntries(nextEntries); entriesRef.current = nextEntries; setIsVisible(nextEntries.length > 0); if (nextEntries.length) speakAt(Math.max(0, Math.min(startIndex, nextEntries.length - 1))); }, [speakAt]);
+  const playEntries = useCallback((nextEntries: GratitudeEntry[], startIndex = 0, ambienceUri?: string | null) => { Speech.stop(); playbackTokenRef.current += 1; activeAmbienceRef.current = ambienceUri; if (gapTimerRef.current) clearTimeout(gapTimerRef.current); setEntries(nextEntries); entriesRef.current = nextEntries; setIsVisible(nextEntries.length > 0); if (nextEntries.length) speakAt(Math.max(0, Math.min(startIndex, nextEntries.length - 1))); }, [speakAt]);
 
   const toggle = useCallback(() => { if (isPlaying) { Speech.stop(); playbackTokenRef.current += 1; if (gapTimerRef.current) clearTimeout(gapTimerRef.current); setIsPlaying(false); stopAmbience(); clearPlaybackNotification(); } else if (entriesRef.current.length) speakAt(currentIndex); }, [clearPlaybackNotification, currentIndex, isPlaying, speakAt, stopAmbience]);
 

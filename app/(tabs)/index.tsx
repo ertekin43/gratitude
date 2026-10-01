@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -25,10 +25,6 @@ const colors = {
   orange: "#E9905E",
 };
 
-function formatEntryDate(date: Date) {
-  return date.toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
-}
-
 function formatEntryTime(date: Date) {
   return date.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
 }
@@ -40,17 +36,19 @@ export default function HomeScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [quickVisible, setQuickVisible] = useState(false);
   const router = useRouter();
-  const { playEntries } = usePlayer();
+  const { playEntries, currentIndex, isPlaying, entries: playingEntries } = usePlayer();
   const inputRef = useRef<TextInput>(null);
   const [dailyGoal, setDailyGoal] = useState(5);
   const [playlistPickerOpen, setPlaylistPickerOpen] = useState(false);
   const [pickerEntry, setPickerEntry] = useState<GratitudeEntry | null>(null);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const listRef = useRef<FlatList<GratitudeEntry>>(null);
 
   const refreshEntries = useCallback(async () => {
     setRefreshing(true);
-    const [loadedEntries, preferences] = await Promise.all([loadGratitudeEntries(), loadPreferences()]);
+    const [loadedEntries, preferences, loadedPlaylists] = await Promise.all([loadGratitudeEntries(), loadPreferences(), ensureDefaultPlaylist()]);
     setEntries(preferences.entrySort === "oldest" ? [...loadedEntries].reverse() : loadedEntries);
+    setPlaylists(loadedPlaylists);
     setRefreshing(false);
   }, []);
 
@@ -96,11 +94,13 @@ export default function HomeScreen() {
     const date = new Date(entry.createdAt);
     return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
   });
+  useEffect(() => { if (!isPlaying || playingEntries.length === 0) return; const activeId = playingEntries[currentIndex]?.id; const activeIndex = todayEntries.findIndex((entry) => entry.id === activeId); if (activeIndex >= 0) listRef.current?.scrollToIndex({ index: activeIndex, animated: true, viewPosition: 0.5 }); }, [currentIndex, isPlaying, playingEntries, todayEntries]);
 
   return (
     <ScreenContainer containerClassName="bg-[#F8F6F0]" safeAreaClassName="bg-[#F8F6F0]">
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.flex}>
         <FlatList
+          ref={listRef}
           data={todayEntries}
           keyExtractor={(item) => item.id}
           keyboardShouldPersistTaps="handled"
@@ -191,13 +191,13 @@ export default function HomeScreen() {
                 <Text style={[styles.entryNumberText, index === 0 && styles.entryNumberTextHighlight]}>{String(todayEntries.length - index).padStart(2, "0")}</Text>
               </View>
               <View style={styles.entryCopy}>
-                  <Text style={styles.entryText}>{item.text}</Text>
+                <Text style={styles.entryText}>{item.text}</Text>
                 <View style={styles.entryMeta}>
-                  <Ionicons name="time-outline" size={12} color={colors.muted} />
-                  <Text style={styles.entryMetaText}>{formatEntryDate(new Date(item.createdAt))} · {formatEntryTime(new Date(item.createdAt))}</Text>
+                  <Text style={styles.entryMetaText}>{formatEntryTime(new Date(item.createdAt))}</Text>
                 </View>
               </View>
-              <Pressable onPress={() => openPlaylistPicker(item)} accessibilityLabel="Playlist’e ekle"><Ionicons name={item.favorite ? "star" : "star-outline"} size={20} color={item.favorite ? colors.orange : colors.muted} /></Pressable>
+              <Pressable onPress={() => playEntries(todayEntries, index)} style={styles.numberPlay} accessibilityLabel="Bu kayıttan oynat"><Ionicons name="play" size={11} color={colors.primary} /></Pressable>
+              <Pressable onPress={() => openPlaylistPicker(item)} accessibilityLabel="Playlist’e ekle"><Ionicons name={playlists.some((playlist) => playlist.entryIds.includes(item.id)) ? "star" : "star-outline"} size={20} color={playlists.some((playlist) => playlist.entryIds.includes(item.id)) ? colors.orange : colors.muted} /></Pressable>
             </View>
           )}
         />
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   todayCount: { color: colors.ink, fontSize: 22, fontWeight: "800", marginTop: 2 },
   todayUnit: { color: colors.muted, fontSize: 13, fontWeight: "600" },
   todayLeaf: { alignItems: "center", backgroundColor: "#CDE7D8", borderRadius: 17, height: 34, justifyContent: "center", width: 34 },
-  listenTodayButton: { alignItems: "center", alignSelf: "flex-start", backgroundColor: "#EEF5F0", borderRadius: 12, flexDirection: "row", gap: 7, marginTop: 9, paddingHorizontal: 11, paddingVertical: 8 },
+  listenTodayButton: { alignItems: "center", alignSelf: "flex-start", backgroundColor: "#EEF5F0", borderRadius: 12, flexDirection: "row", gap: 7, marginTop: 9, paddingHorizontal: 14, paddingVertical: 11 },
   listenTodayDisabled: { opacity: 0.45 },
   listenTodayText: { color: colors.primary, fontSize: 11, fontWeight: "800" },
   listHeaderActions: { alignItems: "center", flexDirection: "row", gap: 7 },
@@ -279,9 +279,10 @@ const styles = StyleSheet.create({
   entryNumberText: { color: colors.muted, fontSize: 11, fontWeight: "800" },
   entryNumberTextHighlight: { color: colors.primary },
   entryCopy: { flex: 1, marginRight: 10 },
-  entryText: { color: colors.ink, fontFamily: "OpenSans", fontSize: 15, fontWeight: "400", lineHeight: 27 },
+  entryText: { color: colors.ink, fontFamily: "PlayfairDisplay", fontSize: 15, fontWeight: "400", lineHeight: 27 },
   entryMeta: { alignItems: "center", flexDirection: "row", gap: 4, marginTop: 9 },
   entryMetaText: { color: colors.muted, fontFamily: "OpenSans", fontSize: 11 },
+  numberPlay: { alignItems: "center", justifyContent: "center", marginLeft: 3, marginTop: 3, width: 28 },
   emptyState: { alignItems: "center", backgroundColor: "#F1EDE2", borderRadius: 20, paddingHorizontal: 24, paddingVertical: 27 },
   emptyIcon: { alignItems: "center", backgroundColor: colors.primarySoft, borderRadius: 19, height: 48, justifyContent: "center", marginBottom: 11, width: 48 },
   emptyTitle: { color: colors.ink, fontSize: 15, fontWeight: "800" },

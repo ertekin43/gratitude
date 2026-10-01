@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { GratitudeEntry } from "@/lib/gratitude";
 
-export type Playlist = { id: string; name: string; entryIds: string[]; createdAt: string };
+export type Playlist = { id: string; name: string; entryIds: string[]; createdAt: string; atmosphereUri?: string | null; atmosphereName?: string | null };
 export const PLAYLISTS_KEY = "sukur-gunlugu.playlists.v1";
 export const DEFAULT_PLAYLIST_ID = "playlist-general";
 
